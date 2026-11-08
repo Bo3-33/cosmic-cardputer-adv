@@ -2203,7 +2203,7 @@ void startWebUiLoopCommon(bool mode_ap) {
     // Short panels pull the URL and the body up.
     const bool shortPanel = panelHeight() < 200;
     tft->drawCentreString("http://launcher.local", tftWidth / 2, shortPanel ? 17 : 22, 1);
-    setTftDisplay(7, shortPanel ? 26 : 47, ~BGCOLOR, _fp, BGCOLOR);
+    setTftDisplay(7, shortPanel ? 26 : 47, getComplementaryColor(BGCOLOR), _fp, BGCOLOR);
     tft->setTextSize(_fm);
     tft->print("IP ");
     tftprintln(txt, 10, 1);

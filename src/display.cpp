@@ -25,6 +25,9 @@ tft_display *tft = new tft_display();
 ** Description:   Scroll large texts into screen
 ***************************************************************************************/
 void displayScrollingText(const String &text, Opt_Coord &coord) {
+#ifdef COSMIC_CARDPUTER
+    return; // Stable, cropped labels; no automatic marquee motion.
+#endif
     int len = text.length();
     static String displayText = "";
     static int i = 0;
@@ -407,32 +410,32 @@ void displayCurrentVersion(
     tft->drawRoundRect(5, 5, tftWidth - 10, tftHeight - 10, 5, FGCOLOR);
     tft->fillRoundRect(6, 6, tftWidth - 12, tftHeight - 12, 5, BGCOLOR);
 
-    setTftDisplay(10, 10, ~BGCOLOR, _fm, BGCOLOR);
+    setTftDisplay(10, 10, getComplementaryColor(BGCOLOR), _fm, BGCOLOR);
     String name2 = String(name);
     tftprintln(name2, 10, 2);
     // Tall panels have room to put the author on its own line.
     if (panelHeight() > 200) setTftDisplay(10, 50, ALCOLOR, _fm);
     tft->print("by: ");
-    tft->setTextColor(~BGCOLOR);
+    tft->setTextColor(getComplementaryColor(BGCOLOR));
     tft->println(String(author).substring(0, 14));
 
     tft->setTextColor(ALCOLOR);
     tft->setCursor(10, tft->getCursorY());
     tft->print("v: ");
-    tft->setTextColor(~BGCOLOR);
+    tft->setTextColor(getComplementaryColor(BGCOLOR));
     tft->println(String(version).substring(0, 15));
 
     tft->setTextColor(ALCOLOR);
     tft->setCursor(10, tft->getCursorY());
     tft->print("from: ");
-    tft->setTextColor(~BGCOLOR);
+    tft->setTextColor(getComplementaryColor(BGCOLOR));
     tft->println(String(published_at));
 
     if (versions.size() > 1) {
         tft->setTextColor(ALCOLOR);
         drawCharAt(10, tftHeight - (10 + _fm * 9), '<', FGCOLOR, BGCOLOR);
         drawCharAt(tftWidth - (10 + _fm * 6), tftHeight - (10 + _fm * 9), '>', FGCOLOR, BGCOLOR);
-        tft->setTextColor(~BGCOLOR);
+        tft->setTextColor(getComplementaryColor(BGCOLOR));
     }
 
     setTftDisplay(-1, -1, ALCOLOR, _fm, BGCOLOR);
@@ -478,6 +481,10 @@ void displayRedStripe(const String &text, uint16_t fgcolor, uint16_t bgcolor, bo
     M5.Display.setEpdMode(epd_mode_t::epd_fast);
 #endif
 
+#ifdef COSMIC_CARDPUTER
+    bgcolor = cosmic::panel;
+    fgcolor = cosmic::text;
+#endif
     // stripe drawing
     int size = text.length() * LW * _fm < (tft->width() - 2 * _fm * LW) ? _fm : _fp;
     int paddingX = 8;
@@ -1745,6 +1752,9 @@ void tftprint(const String &txt, int margin, int numlines) {
 ** Description:   Get simple complementary color in RGB565 format
 ***************************************************************************************/
 uint16_t getComplementaryColor(uint16_t color) {
+#ifdef COSMIC_CARDPUTER
+    return cosmic::text;
+#endif
     int r = 31 - ((color >> 11) & 0x1F);
     int g = 63 - ((color >> 5) & 0x3F);
     int b = 31 - (color & 0x1F);

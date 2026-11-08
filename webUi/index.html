@@ -3,12 +3,13 @@
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta charset="UTF-8">
+<title>COSMIC · Cardputer</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="w">
   <div class="card">
-    <h1>&#11835; LAUNCHER &#11835;</h1>
+    <h1>COSMIC <span style="font-size:.8rem;color:var(--dim);font-weight:400">/ CARDPUTER ADV</span></h1>
     <div class="row" style="margin-bottom:6px">
       <div class="tag">v <b id="firmwareVersion">&#8230;</b></div>
     </div>
@@ -23,7 +24,7 @@
     </form>
     <button class="hbg" onclick="toggleMenu()">&#9776; Menu</button>
     <div class="row" id="menu">
-      <button onclick="toggleConfigOverlay()">&#9881; Config</button>
+      <button onclick="toggleConfigOverlay()">&#9881; Settings</button>
       <button onclick="callOTA()">&#8593; OTA</button>
       <button onclick="listFilesButton('/')">&#128193; Files</button>
       <button onclick="loadPartitions()">&#128202; Partitions</button>

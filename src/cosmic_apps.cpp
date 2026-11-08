@@ -3,6 +3,7 @@
 #include "controller_bridge.h"
 #include "cosmic.h"
 #include "cosmic_lua.h"
+#include "cosmic_music.h"
 #include "idf/launcher_platform.h"
 #include "mykeyboard.h"
 #include "powerSave.h"
@@ -214,6 +215,10 @@ void switcher() {
             );
             items.push_back({"Close " + running[i]->package.name, [i]() { closeApp(i); }});
         }
+    if (cosmicMusicLoaded()) {
+        items.push_back({"Resume Music", []() { cosmicMusicMenu(); }});
+        items.push_back({"Close Music", []() { cosmicMusicClose(); }});
+    }
     if (controllerBridgeRunning())
         items.push_back({"USB bridge (background)", []() { controllerBridgeMenu(); }});
     if (items.empty()) {
@@ -285,7 +290,7 @@ void appLoop() {
                 break;
             }
         }
-        if (app->dirty || previousSlot != slot || now - paintAt >= 100) {
+        if (app->dirty || previousSlot != slot) {
             paintAt = now;
             previousSlot = slot;
             app->dirty = false;
@@ -403,15 +408,24 @@ void cosmicAppSwitcher() {
 }
 void cosmicAppsMenu() {
     if (!sdcardMounted && !setupSdCard()) {
-        displayError("Insert an SD card with /apps", true);
-        return;
+        // Native apps remain available without SD storage.
     }
     bool done = false;
     while (!done) {
         unsigned invalid;
         auto packages = scan(invalid);
         std::vector<Option> items = {
-            {"App switcher", [&]() {
+            {"Music",
+             [&]() {
+                 cosmicMusicMenu();
+                 done = true;
+             }                            },
+            {"Controller Bridge",
+             [&]() {
+                 controllerBridgeMenu();
+                 done = true;
+             }                            },
+            {"App switcher",      [&]() {
                  cosmicAppSwitcher();
                  done = true;
              }}

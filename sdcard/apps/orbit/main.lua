@@ -4,7 +4,7 @@ return {
     if key == "right" then speed = math.min(4, speed + 0.25) end
     if key == "left" then speed = math.max(0, speed - 0.25) end
   end,
-  update = function(dt) angle = (angle + dt * speed) % (math.pi * 2) end,
+  update = function(dt) app.redraw(); angle = (angle + dt * speed) % (math.pi * 2) end,
   draw = function()
     ui.text(9, 8, "A tiny COSMIC app", 1, theme.accent)
     for i = 0, 23 do

@@ -61,7 +61,7 @@ static void wallpaper() {
 }
 void boot(bool force) {
     static unsigned long painted = 0;
-    if (!force && launcherMillis() - painted < 500) return;
+    if (!force && painted) return;
     painted = launcherMillis();
     applyTheme();
     wallpaper();
@@ -71,6 +71,29 @@ void boot(bool force) {
     footer("ENTER Launcher   Other key Boot app");
     tft->display(false);
 }
+void drawIcon(const String &name, int x, int y) {
+    if (name.indexOf("Controller") >= 0 || name.indexOf("bridge") >= 0) {
+        tft->drawRoundRect(x, y + 3, 18, 12, 4, text);
+        tft->drawLine(x + 3, y + 9, x + 9, y + 9, text);
+        tft->drawLine(x + 6, y + 6, x + 6, y + 12, text);
+        tft->fillCircle(x + 14, y + 8, 1, accent);
+    } else if (name.indexOf("Stopwatch") >= 0) {
+        tft->drawCircle(x + 9, y + 9, 7, text);
+        tft->drawLine(x + 9, y + 9, x + 9, y + 4, accent);
+        tft->drawLine(x + 9, y + 9, x + 13, y + 9, accent);
+    } else if (name.indexOf("Notes") >= 0) {
+        tft->drawRoundRect(x + 2, y, 14, 18, 2, text);
+        for (int row = 0; row < 3; ++row)
+            tft->drawLine(x + 5, y + 5 + row * 4, x + 13, y + 5 + row * 4, text);
+    } else if (name.indexOf("Orbit") >= 0) {
+        tft->drawCircle(x + 9, y + 9, 7, text);
+        tft->fillCircle(x + 9, y + 9, 2, accent);
+        tft->fillCircle(x + 15, y + 5, 2, text);
+    } else {
+        tft->fillRoundRect(x, y, 18, 18, 4, panel);
+        label(name.substring(0, 1), x + 6, y + 5, panel);
+    }
+}
 Opt_Coord options(int index, std::vector<Option> &items, std::vector<MenuOptions> &hitboxes) {
     Opt_Coord coord;
     hitboxes.clear();
@@ -78,24 +101,31 @@ Opt_Coord options(int index, std::vector<Option> &items, std::vector<MenuOptions
     header(menuTitle);
     if (items.empty()) return coord;
     index = std::max(0, std::min(index, int(items.size()) - 1));
-    int start = index / 3 * 3;
+    int start = std::max(0, index - 1);
+    start = std::min(start, std::max(0, int(items.size()) - 3));
     for (int row = 0; row < 3 && start + row < int(items.size()); ++row) {
         int i = start + row, y = 25 + row * 29;
         uint16_t bg = i == index ? panel : surface;
         tft->fillRoundRect(7, y, tftWidth - 14, 25, 7, bg);
         if (i == index) tft->fillRoundRect(10, y + 5, 3, 15, 1, accent);
-        label(items[i].label.substring(0, 34), 19, y + 9, bg);
+        drawIcon(items[i].label, 20, y + 5);
+        label(items[i].label.substring(0, 29), 45, y + 9, bg);
         MenuOptions hit(String(i), "", nullptr);
         hit.setCoords(7, y, tftWidth - 14, 25);
         hitboxes.push_back(hit);
         if (i == index) {
-            coord.x = 19;
+            coord.x = 45;
             coord.y = y + 9;
-            coord.size = 35;
+            coord.size = 30;
             coord.fgcolor = text;
             coord.bgcolor = bg;
         }
     }
+    tft->fillRoundRect(236, 25, 3, 83, 1, surface);
+    int thumb = std::max(8, 83 * std::min(3, int(items.size())) / int(items.size()));
+    tft->fillRoundRect(
+        236, 25 + (83 - thumb) * index / std::max(1, int(items.size()) - 1), 3, thumb, 1, accent
+    );
     footer("ENTER Open  ESC Back    " + String(index + 1) + "/" + String(items.size()));
     tft->display(false);
     return coord;
@@ -189,7 +219,7 @@ void desktop() {
     tft->setRotation(1);
     tftWidth = 240;
     tftHeight = 135;
-    const char *names[] = {"Apps", "Firmware", "SD files", "Controller bridge", "Wi-Fi", "Settings"};
+    const char *names[] = {"Apps", "Firmware", "SD files", "Wi-Fi", "Settings"};
     int selected = 0;
     bool redraw = true;
     unsigned long statusAt = 0;
@@ -201,10 +231,10 @@ void desktop() {
             label("COSMIC", 66, 30, background, 3);
             label(names[selected], (240 - strlen(names[selected]) * 6) / 2, 63);
             tft->fillRoundRect(15, 79, 210, 37, 8, surface);
-            for (int i = 0; i < 6; ++i) {
-                int x = 22 + i * 34;
+            for (int i = 0; i < 5; ++i) {
+                int x = 36 + i * 36;
                 if (i == selected) tft->fillRoundRect(x - 3, 81, 30, 29, 5, panel);
-                icon(i, x, 83);
+                icon(i >= 3 ? i + 1 : i, x, 83);
                 if (i == selected) tft->fillRoundRect(x + 4, 110, 16, 3, 1, accent);
             }
             label("TAB Switcher   ENTER Open", 45, 123);
@@ -213,15 +243,14 @@ void desktop() {
         }
         if (launcherMillis() - statusAt > 3000) {
             statusAt = launcherMillis();
-            header("Apps");
-            tft->display(false);
+            redraw = true;
         }
         if (check(PrevPress) || check(UpPress)) {
-            selected = (selected + 5) % 6;
+            selected = (selected + 4) % 5;
             redraw = true;
         }
         if (check(NextPress) || check(DownPress)) {
-            selected = (selected + 1) % 6;
+            selected = (selected + 1) % 5;
             redraw = true;
         }
         if (check(SelPress)) {
@@ -229,9 +258,8 @@ void desktop() {
                 case 0: cosmicAppsMenu(); break;
                 case 1: firmware(); break;
                 case 2: loopSD(false); break;
-                case 3: controllerBridgeMenu(); break;
-                case 4: connectWifi(); break;
-                case 5: settings(); break;
+                case 3: connectWifi(); break;
+                case 4: settings(); break;
             }
             applyTheme();
             tft->setRotation(1);

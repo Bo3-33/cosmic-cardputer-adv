@@ -55,7 +55,7 @@ return {
 }
 ```
 
-`init()` runs once when loading. `resume()` runs when brought to the foreground. `key(name)` receives one key event at a time. `update(dt)` runs approximately 30 times per second with elapsed seconds capped at `0.1`; it stops while the app is paused. `draw()` runs on input, requested redraw, and approximately every 100 ms while foreground. Keep drawing calls in `draw()`. The launcher clears the app content region before each frame. `suspend()` runs when switching away or closing; an already paused app can receive another suspend on close, so make it repeatable.
+`init()` runs once when loading. `resume()` runs when brought to the foreground. `key(name)` receives one key event at a time. `update(dt)` runs approximately 30 times per second with elapsed seconds capped at `0.1`; it stops while the app is paused. `draw()` runs on input, explicit `app.redraw()`, and when an app becomes foreground. Animated apps must call `app.redraw()` from `update(dt)` when their content changes. There is no timer-driven repaint for static apps. Keep drawing calls in `draw()`. The launcher clears the app content region before each frame. `suspend()` runs when switching away or closing; an already paused app can receive another suspend on close, so make it repeatable.
 
 TAB opens the app switcher from an app or the desktop. It offers resume, close, close all Lua apps, desktop, and the bridge monitor when forwarding is active. The switcher shows each app's Lua allocation in KB. The backtick/ESC key returns to the desktop and retains the app state. Closing an app releases its Lua memory. Variables do not survive a reboot; explicitly save data you need later.
 

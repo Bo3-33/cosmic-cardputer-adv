@@ -1,3 +1,31 @@
+// One themed dialog queue for settings, file operations and partition confirmations.
+let cosmicDialogQueue = Promise.resolve();
+function cosmicDialog(message, kind, initial = '') {
+    const task = cosmicDialogQueue.then(() => new Promise(resolve => {
+        const dialog = document.createElement('dialog'); dialog.className = 'cosmic-dialog';
+        const title = document.createElement('h2'); title.textContent = kind === 'alert' ? 'Notice' : 'COSMIC';
+        const text = document.createElement('p'); text.textContent = message; text.style.whiteSpace = 'pre-wrap';
+        const field = document.createElement('input'); field.value = initial;
+        field.type = /password/i.test(message) ? 'password' : 'text';
+        field.setAttribute('aria-label', message);
+        const actions = document.createElement('div'); actions.className = 'row';
+        const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+        const accept = document.createElement('button'); accept.textContent = kind === 'alert' ? 'OK' : 'Continue';
+        const finish = value => { dialog.close(); dialog.remove(); resolve(value); };
+        cancel.onclick = () => finish(kind === 'prompt' ? null : false);
+        accept.onclick = () => finish(kind === 'prompt' ? field.value : true);
+        dialog.oncancel = e => { e.preventDefault(); cancel.click(); };
+        dialog.append(title, text); if(kind === 'prompt') dialog.append(field);
+        if(kind !== 'alert') actions.append(cancel); actions.append(accept); dialog.append(actions);
+        document.body.append(dialog); dialog.showModal();
+        (kind === 'prompt' ? field : accept).focus();
+        field.onkeydown = e => { if(e.key === 'Enter') { e.preventDefault(); accept.click(); } };
+    }));
+    cosmicDialogQueue = task.catch(() => {}); return task;
+}
+function cosmicPrompt(message, initial = '') { return cosmicDialog(message, 'prompt', initial); }
+function cosmicConfirm(message) { return cosmicDialog(message, 'confirm'); }
+function cosmicAlert(message) { return cosmicDialog(message, 'alert'); }
 function _(e) { return document.getElementById(e); }
 function toggleMenu(){_('menu').classList.toggle('open')}
 function toggleConfigOverlay(){_('configOverlay').classList.toggle('open')}
@@ -25,7 +53,7 @@ function newFile(folder) {
 function saveFile() {
     const fileName = _('editor-title').value.trim();
     if (isNullOrEmpty(fileName)) {
-        window.alert('Invalid file name');
+        cosmicAlert('Invalid file name');
         return;
     }
     const xhr = new XMLHttpRequest();
@@ -49,11 +77,11 @@ function loadNvs() {
     x.open('GET', '/nvs');
     x.onload = () => {
         _nvsData = JSON.parse(x.responseText);
-        const inp = 'style="width:100px;background:#303134;color:#0d0;border:1px solid #0d0;padding:2px"';
-        const inps = 'style="width:220px;background:#303134;color:#0d0;border:1px solid #0d0;padding:2px"';
+        const inp = 'style="width:100px;background:var(--s2);color:var(--fg);border:1px solid var(--fg);padding:2px"';
+        const inps = 'style="width:220px;background:var(--s2);color:var(--fg);border:1px solid var(--fg);padding:2px"';
         let h = '';
         for (const ns in _nvsData) {
-            h += '<h3 style="margin:8px 0 4px;color:#0d0">' + ns +
+            h += '<h3 style="margin:8px 0 4px;color:var(--fg)">' + ns +
                 ' <span title="Delete namespace" style="cursor:pointer" onclick="deleteNvsNamespace(\'' + ns + '\')">&#128465;</span></h3>';
             _nvsData[ns].forEach(f => {
                 const id = _nvsId(ns, f.k);
@@ -65,24 +93,24 @@ function loadNvs() {
                 else if (f.t === 'str')
                     h += '<input type="text" id="' + id + '" value="' + f.v + '" ' + inps + '>';
                 else
-                    h += '<span style="color:#888">' + (f.t === 'blob' ? f.sz + ' bytes' : 'not editable') + '</span>';
-                h += ' <small style="color:#888">' + f.t + '</small></div>';
+                    h += '<span style="color:var(--dim)">' + (f.t === 'blob' ? f.sz + ' bytes' : 'not editable') + '</span>';
+                h += ' <small style="color:var(--dim)">' + f.t + '</small></div>';
             });
         }
         _('nvs-body').innerHTML = h;
     };
     x.send();
 }
-function deleteNvsNamespace(ns) {
-    if (ns === 'launcher') { window.alert('The launcher namespace cannot be deleted.'); return; }
-    if (!confirm('Erase the entire "' + ns + '" namespace? This cannot be undone.')) return;
+async function deleteNvsNamespace(ns) {
+    if (ns === 'launcher') { cosmicAlert('The launcher namespace cannot be deleted.'); return; }
+    if (!await cosmicConfirm('Erase the entire "' + ns + '" namespace? This cannot be undone.')) return;
     const x = new XMLHttpRequest();
     x.open('DELETE', '/nvs?ns=' + encodeURIComponent(ns));
     x.onload = () => { _('status').innerHTML = x.responseText === 'OK' ? 'Namespace erased!' : x.responseText; loadNvs(); };
     x.send();
 }
-function eraseBleBonds() {
-    if (!confirm('Erase all BLE bonds? Every device has to be paired again.')) return;
+async function eraseBleBonds() {
+    if (!await cosmicConfirm('Erase all BLE bonds? Every device has to be paired again.')) return;
     const x = new XMLHttpRequest();
     x.open('POST', '/blebonds');
     x.onload = () => { _('status').innerHTML = x.responseText; loadNvs(); };
@@ -131,31 +159,31 @@ function isNullOrEmpty(value) {
     return value === null || value === "";
 }
 
-function WifiConfig(target) {
+async function WifiConfig(target) {
     let wifiSsid;
     let wifiPwd;
     if (target === "usr") {
-        wifiSsid = prompt("Username of access Launcher", "admin");
-        wifiPwd = prompt("Password", "launcher");
+        wifiSsid = await cosmicPrompt("Username of access Launcher", "admin");
+        wifiPwd = await cosmicPrompt("Password", "launcher");
     } else if (target === "ssid") {
-        wifiSsid = prompt("SSID of your network", "");
-        wifiPwd = prompt("Password of your network", "");
+        wifiSsid = await cosmicPrompt("SSID of your network", "");
+        wifiPwd = await cosmicPrompt("Password of your network", "");
     }
     if (isNullOrEmpty(wifiSsid) || wifiPwd === null) {
-        window.alert("Invalid " + target + " or password");
+        cosmicAlert("Invalid " + target + " or password");
     } else {
-        const xhr = httpRequest("GET", "/wifi?" + target + "=" + wifiSsid + "&pwd=" + wifiPwd, { async: false });
+        const xhr = httpRequest("GET", "/wifi?" + target + "=" + encodeURIComponent(wifiSsid) + "&pwd=" + encodeURIComponent(wifiPwd), { async: false });
         _("status").innerHTML = xhr.responseText;
     }
 }
 
-function SDConfig() {
-    const miso = prompt("MISO pin", "");
-    const mosi = prompt("MOSI pin", "");
-    const sck = prompt("SCK pin", "");
-    const cs = prompt("CS pin", "");
+async function SDConfig() {
+    const miso = await cosmicPrompt("MISO pin", "");
+    const mosi = await cosmicPrompt("MOSI pin", "");
+    const sck = await cosmicPrompt("SCK pin", "");
+    const cs = await cosmicPrompt("CS pin", "");
     if ([miso, mosi, sck, cs].some(isNullOrEmpty)) {
-        window.alert("Invalid pins");
+        cosmicAlert("Invalid pins");
     } else {
         const xhr = httpRequest("GET", "/sdpins?miso=" + miso + "&mosi=" + mosi + "&sck=" + sck + "&cs=" + cs, { async: false });
         _("status").innerHTML = xhr.responseText;
@@ -282,11 +310,11 @@ function analyzeFile() {
     outputDiv.style.display = 'none';
     let pass = true;
     if (fileInput.files.length === 0) {
-        window.alert('Please, select a file.');
+        cosmicAlert('Please, select a file.');
         return;
     }
     if (fileInput.files[0].name.split('.').pop() !== "bin") {
-        window.alert('File is not a .bin');
+        cosmicAlert('File is not a .bin');
         return;
     }
     const file = fileInput.files[0];
@@ -398,8 +426,8 @@ function logoutButton() {
     httpRequest("GET", "/logout");
     setTimeout(function () { window.open("/logged-out", "_self"); }, 500);
 }
-function rebootButton() {
-    if (confirm("Confirm Restart?!")) {
+async function rebootButton() {
+    if (await cosmicConfirm("Confirm Restart?!")) {
         httpRequest("GET", "/reboot");
     }
 }
@@ -412,12 +440,12 @@ function renderInstalledApps(apps) {
         app.name + '</button>'
     ).join('');
 }
-function bootIntoApp(label, name) {
-    if (!confirm('Restart into "' + name + '"?')) return;
+async function bootIntoApp(label, name) {
+    if (!await cosmicConfirm('Restart into "' + name + '"?')) return;
     httpRequest("POST", "/bootapp", {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: "label=" + encodeURIComponent(label),
-        onload: (xhr) => {
+        onload: async (xhr) => {
             _("status").innerHTML = xhr.status === 200 ? 'Rebooting into ' + name + '...' : xhr.responseText;
         }
     });
@@ -426,7 +454,7 @@ let _sdInfo = null;
 let _currentSection = '';
 function systemInfo() {
     httpRequest("GET", "/systeminfo", {
-        onload: (xhr) => {
+        onload: async (xhr) => {
             if (xhr.status === 200) {
                 try {
                     const data = JSON.parse(xhr.responseText);
@@ -462,7 +490,7 @@ function listFilesButton(folders) {
     let previousFolder = folders.substring(0, folders.lastIndexOf('/'));
     if (previousFolder === "") { previousFolder = "/"; }
     httpRequest("GET", "/listfiles?folder=" + folders, {
-        onload: (xhr) => {
+        onload: async (xhr) => {
             if (xhr.status === 200) {
                 const responseText = xhr.responseText;
                 const lines = responseText.split('\n');
@@ -489,7 +517,7 @@ function listFilesButton(folders) {
                 foldersArray.sort((a, b) => a.name.localeCompare(b.name));
                 filesArray.sort((a, b) => a.name.localeCompare(b.name));
                 foldersArray.forEach((item) => {
-                    const ac = "<span style='cursor:pointer;color:#e0d204' onclick=\"listFilesButton('" + item.path + "')\">&#128193;</span>&nbsp" +
+                    const ac = "<span style='cursor:pointer;color:var(--fg)' onclick=\"listFilesButton('" + item.path + "')\">&#128193;</span>&nbsp" +
                                "<span style='cursor:pointer' onclick=\"renameFile('" + item.path + "', '" + item.name + "')\">&#9999;</span>&nbsp" +
                                "<span style='cursor:pointer' onclick=\"downloadDeleteButton('" + item.path + "', 'delete')\">&#128465;</span>";
                     tableContent += "<tr><td><a onclick=\"listFilesButton('" + item.path + "')\" href='javascript:void(0);'>" + item.name + "</a></td>" +
@@ -534,11 +562,11 @@ function listFilesButton(folders) {
     _("analysisOutput").style.display = 'none';
     _("spiffsInfo").style.display = 'none';
 }
-function renameFile(filePath, oldName) {
+async function renameFile(filePath, oldName) {
     const actualFolder = _("actualFolder").value;
-    const fileName = prompt("Enter the new name: ", oldName);
+    const fileName = await cosmicPrompt("Enter the new name: ", oldName);
     if (isNullOrEmpty(fileName)) {
-        window.alert("Invalid Name");
+        cosmicAlert("Invalid Name");
     } else {
         const formdata5 = new FormData();
         formdata5.append("filePath", filePath);
@@ -548,12 +576,12 @@ function renameFile(filePath, oldName) {
         listFilesButton(actualFolder);
     }
 }
-function downloadDeleteButton(filename, action) {
+async function downloadDeleteButton(filename, action) {
     const urltocall = "/file?name=" + filename + "&action=" + action;
     const actualFolder = _("actualFolder").value;
     const isDelete = action === "delete";
     if (isDelete || action === "create") {
-        if (!isDelete || confirm("Do you really want to DELETE the file: " + filename + " ?\n\nThis action can't be undone!")) {
+        if (!isDelete || await cosmicConfirm("Do you really want to DELETE the file: " + filename + " ?\n\nThis action can't be undone!")) {
             const xhr = httpRequest("GET", urltocall, { async: false });
             _("status").innerHTML = xhr.responseText;
             listFilesButton(actualFolder);
@@ -565,10 +593,10 @@ function downloadDeleteButton(filename, action) {
         window.open(urltocall, "_blank");
     }
 }
-function CreateFolder(folders) {
-    const folderName = prompt("Folder Name", "");
+async function CreateFolder(folders) {
+    const folderName = await cosmicPrompt("Folder Name", "");
     if (isNullOrEmpty(folderName)) {
-        window.alert("Invalid Folder Name");
+        cosmicAlert("Invalid Folder Name");
     } else {
         downloadDeleteButton(_("actualFolder").value + "/" + folderName, 'create');
     }
@@ -758,7 +786,7 @@ function partitionsPost(params, onDone) {
     Object.keys(params).forEach((k) => fd.append(k, params[k]));
     httpRequest("POST", "/partitions", {
         body: fd,
-        onload: (xhr) => {
+        onload: async (xhr) => {
             if (xhr.status === 200) {
                 if (typeof onDone === 'function') onDone(xhr);
             } else {
@@ -779,7 +807,7 @@ function loadPartitions() {
     _("drop-area").style.display = 'block';
     _("details").innerHTML = "Loading...";
     httpRequest("GET", "/partitions", {
-        onload: (xhr) => {
+        onload: async (xhr) => {
             if (xhr.status !== 200) { _("details").innerHTML = "Failed to load partitions."; return; }
             _pmanData = JSON.parse(xhr.responseText);
             pmanRender(_pmanData);
@@ -861,7 +889,7 @@ function pmanRender(data) {
 function pmanDetails(offset) {
     const e = _pmanData.entries.find((x) => x.offset === offset);
     if (!e) return;
-    window.alert(
+    cosmicAlert(
         'Label: ' + e.label +
         '\nType: ' + e.typeName + '/' + e.subtypeName +
         '\nOffset: ' + pmanHex(e.offset) +
@@ -900,32 +928,32 @@ function pmanResizeConfirm() {
     _('pmanResizeOverlay').classList.remove('open');
     partitionsPost({ action: 'resize', offset: _pmanResizeEntry.offset, size }, () => loadPartitions());
 }
-function pmanCreate(type, subtype, defaultLabel, defaultSizeKb) {
-    const label = prompt('Partition label:', defaultLabel);
+async function pmanCreate(type, subtype, defaultLabel, defaultSizeKb) {
+    const label = await cosmicPrompt('Partition label:', defaultLabel);
     if (isNullOrEmpty(label)) return;
-    const sizeKb = prompt('Size in KB:', defaultSizeKb);
+    const sizeKb = await cosmicPrompt('Size in KB:', defaultSizeKb);
     if (isNullOrEmpty(sizeKb)) return;
     const size = parseInt(sizeKb) * 1024;
-    if (!size || size <= 0) { window.alert('Invalid size'); return; }
+    if (!size || size <= 0) { cosmicAlert('Invalid size'); return; }
     partitionsPost({ action: 'create', type, subtype, label, size }, () => loadPartitions());
 }
-function pmanDelete(offset, label) {
-    if (!confirm(`Remove partition "${label}"?\n\nThis is staged until you Apply Changes.`)) return;
+async function pmanDelete(offset, label) {
+    if (!await cosmicConfirm(`Remove partition "${label}"?\n\nThis is staged until you Apply Changes.`)) return;
     partitionsPost({ action: 'delete', offset }, () => loadPartitions());
 }
-function pmanFormat(offset, label) {
-    if (!confirm(`Erase all data on "${label}" now?\n\nThis happens immediately and can't be undone.`)) return;
+async function pmanFormat(offset, label) {
+    if (!await cosmicConfirm(`Erase all data on "${label}" now?\n\nThis happens immediately and can't be undone.`)) return;
     partitionsPost({ action: 'format', offset }, () => loadPartitions());
 }
-function pmanApply() {
-    if (!confirm('Write the new partition table and reboot the device now?')) return;
+async function pmanApply() {
+    if (!await cosmicConfirm('Write the new partition table and reboot the device now?')) return;
     partitionsPost({ action: 'apply' }, () => {
         _("details").innerHTML = '<p>Partition table written. The device is rebooting...</p>';
         _("status").innerHTML = '';
     });
 }
-function pmanDiscard() {
-    if (!confirm('Discard all pending changes?')) return;
+async function pmanDiscard() {
+    if (!await cosmicConfirm('Discard all pending changes?')) return;
     partitionsPost({ action: 'discard' }, () => loadPartitions());
 }
 function pmanBackup(label) {
@@ -934,22 +962,22 @@ function pmanBackup(label) {
         _("status").innerHTML = 'Backup saved: ' + res.path;
     });
 }
-function pmanRestore(label) {
+async function pmanRestore(label) {
     httpRequest("GET", "/partitions?list=backups&label=" + encodeURIComponent(label), {
-        onload: (xhr) => {
+        onload: async (xhr) => {
             if (xhr.status !== 200) { _("status").innerHTML = 'Failed to list backups'; return; }
             const list = (JSON.parse(xhr.responseText).backups) || [];
-            if (!list.length) { window.alert(`No backups found for "${label}"`); return; }
+            if (!list.length) { cosmicAlert(`No backups found for "${label}"`); return; }
             let path = list[list.length - 1].path;
             if (list.length > 1) {
                 const options = list.map((b, i) => `${i + 1}: ${b.path}`).join('\n');
-                const choice = prompt('Choose a backup to restore:\n' + options, String(list.length));
+                const choice = await cosmicPrompt('Choose a backup to restore:\n' + options, String(list.length));
                 if (isNullOrEmpty(choice)) return;
                 const picked = list[parseInt(choice) - 1];
-                if (!picked) { window.alert('Invalid choice'); return; }
+                if (!picked) { cosmicAlert('Invalid choice'); return; }
                 path = picked.path;
             }
-            if (!confirm(`Restore "${label}" from:\n${path}\n\nThis overwrites the current data on the partition.`)) return;
+            if (!await cosmicConfirm(`Restore "${label}" from:\n${path}\n\nThis overwrites the current data on the partition.`)) return;
             partitionsPost({ action: 'restore', label, path }, () => {
                 _("status").innerHTML = `Restored ${label} from ${path}`;
             });

@@ -16,6 +16,7 @@ void footer(const String &hint);
 void label(const String &s, int x, int y, uint16_t bg = background, int size = 1);
 void boot(bool force);
 void desktop();
+void drawIcon(const String &name, int x, int y);
 String setTitle(const String &title);
 Opt_Coord options(int index, std::vector<Option> &items, std::vector<MenuOptions> &hitboxes);
 } // namespace cosmic

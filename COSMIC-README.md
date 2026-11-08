@@ -1,6 +1,8 @@
 # COSMIC Cardputer ADV launcher — development build
 
-A custom build of bmorcelli/Launcher with your COSMIC theme, a desktop dock, SD-card Lua apps, a state-preserving app switcher, and a wired DualShock 4 → Wi-Fi → Luma3DS controller bridge.
+Revision v0.2: buffered LCD frames, stable static screens, scrollable icon lists, Controller Bridge and Music inside Apps, themed physical-keyboard entry, and a redesigned WebUI including settings dialogs. See MUSIC.md for MP3/WAV setup.
+
+A custom build of bmorcelli/Launcher with your COSMIC theme, a desktop dock, SD-card Lua apps, MP3/WAV Cover Flow music, a state-preserving app switcher, and a wired DualShock 4 → Wi-Fi → Luma3DS controller bridge.
 
 This build has compile and portable automated-test validation. It has not been flashed or tested on a physical Cardputer ADV or 2DS XL in this session. USB power, enumeration, keyboard behavior, real free memory, and gameplay latency need device testing.
 
@@ -30,11 +32,11 @@ The full image's SHA-256 is listed in `SHA256SUMS`. A full flash changes the par
 
 ## Desktop and apps
 
-Use the existing arrow/navigation keys to select dock icons; ENTER opens them. The dock contains Apps, Firmware, SD Files, Controller Bridge, Wi-Fi and Settings. TAB opens the switcher on the desktop and inside Lua apps. Backtick/ESC returns a Lua app to the desktop without closing it. Backspace edits inside Lua apps. Menus use backspace or backtick as Back.
+Use the existing arrow/navigation keys to select dock icons; ENTER opens them. The dock contains Apps, Firmware, SD Files, Wi-Fi and Settings. TAB opens the switcher on the desktop and inside Lua apps. Backtick/ESC returns a Lua app to the desktop without closing it. Backspace edits inside Lua apps. Menus use backspace or backtick as Back.
 
 Apps run inside the launcher. Up to three Lua states are retained if memory permits; only the foreground Lua app receives updates. Closing frees its state. The bridge keeps forwarding in the background. Native system tools are modal; standalone ESP32 firmware `.bin` files still boot separately. See `APP-FORMAT.md` to write or package apps.
 
-Your theme is applied to the shell and list menus: background `#060606`, panel `#690C0C`, accent `#FF0404`, text `#FFDFDA`, surface `#262626`. The layout is fixed to landscape 240 × 135. Advanced tools retain their upstream layouts with themed colors.
+Your theme is applied to the shell and list menus: background `#060606`, panel `#690C0C`, accent `#FF0404`, text `#FFDFDA`, surface `#262626`. The layout is fixed to landscape 240 × 135. System lists and physical-keyboard entry use the shared theme. Advanced diagnostic content keeps its existing controls and data.
 
 ## DualShock 4 USB bridge
 

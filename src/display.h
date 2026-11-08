@@ -33,6 +33,28 @@
 #define PINK TFT_PINK
 #define PALERED 0xF9A0
 
+#ifdef COSMIC_CARDPUTER
+#undef BLACK
+#define BLACK 0x0020
+#undef WHITE
+#define WHITE 0xFEFB
+#undef DARKGREY
+#define DARKGREY 0x2124
+#undef LIGHTGREY
+#define LIGHTGREY 0xFEFB
+#undef GREEN
+#define GREEN 0xF820
+#undef CYAN
+#define CYAN 0xFEFB
+#undef BLUE
+#define BLUE 0x6801
+#undef YELLOW
+#define YELLOW 0xFEFB
+#undef ORANGE
+#define ORANGE 0xF820
+#undef RED
+#define RED 0xF820
+#endif
 #if defined(E_PAPER_DISPLAY)
 #define NATIVE_BGCOLOR WHITE
 #else

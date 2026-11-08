@@ -1,4 +1,5 @@
 #include "mykeyboard.h"
+#include "cosmic.h"
 #include "display.h"
 #include "idf/launcher_platform.h"
 #include "powerSave.h"
@@ -362,7 +363,7 @@ String generalKeyboard(
         for (int j = 0; j < KeyboardHeight; j++) { // y coord
             box_list[k].key = keys[j][i][0];
             box_list[k].key_sh = keys[j][i][1];
-            box_list[k].color = ~BGCOLOR;
+            box_list[k].color = getComplementaryColor(BGCOLOR);
             box_list[k].x = i * key_width;
             box_list[k].y = j * key_height + 2 * KBLH + LH * _fm;
             box_list[k].w = key_width;
@@ -375,7 +376,7 @@ String generalKeyboard(
     for (int i = 0; i < buttons_number; i++) {
         box_list[k].key = ' ';
         box_list[k].key_sh = ' ';
-        box_list[k].color = ~BGCOLOR;
+        box_list[k].color = getComplementaryColor(BGCOLOR);
         box_list[k].x = btns_layout[i][0];
         box_list[k].y = 0;
         box_list[k].w = btns_layout[i][1];
@@ -550,13 +551,13 @@ String generalKeyboard(
 
                     // Use the previous coordinates to redraw only the previous letter
                     if (old_x == j && old_y == i) {
-                        tft->setTextColor(~BGCOLOR, BGCOLOR);
+                        tft->setTextColor(getComplementaryColor(BGCOLOR), BGCOLOR);
                         tft->fillRect(key_x, key_y, key_width, key_height, BGCOLOR);
                     }
                     // If selected, highlight it by changing font color and filling the back rectangle
                     if (x == j && y == i) {
-                        tft->setTextColor(BGCOLOR, ~BGCOLOR);
-                        tft->fillRect(key_x, key_y, key_width, key_height, ~BGCOLOR);
+                        tft->setTextColor(BGCOLOR, getComplementaryColor(BGCOLOR));
+                        tft->fillRect(key_x, key_y, key_width, key_height, getComplementaryColor(BGCOLOR));
                     }
 
                     // Print the letters
@@ -566,7 +567,7 @@ String generalKeyboard(
                             key_y + 2 + text_offset_y,
                             keys[i][j][0],
                             x == j && y == i ? BGCOLOR : FGCOLOR,
-                            x == j && y == i ? ~BGCOLOR : BGCOLOR
+                            x == j && y == i ? getComplementaryColor(BGCOLOR) : BGCOLOR
                         );
                     else
                         drawCharAt(
@@ -574,11 +575,11 @@ String generalKeyboard(
                             key_y + 2 + text_offset_y,
                             keys[i][j][1],
                             x == j && y == i ? BGCOLOR : FGCOLOR,
-                            x == j && y == i ? ~BGCOLOR : BGCOLOR
+                            x == j && y == i ? getComplementaryColor(BGCOLOR) : BGCOLOR
                         );
 
                     // Return colors to normal to print the other letters
-                    if (x == j && y == i) { tft->setTextColor(~BGCOLOR, BGCOLOR); }
+                    if (x == j && y == i) { tft->setTextColor(getComplementaryColor(BGCOLOR), BGCOLOR); }
                     ALIVIATE_TASK;
                 }
             }
@@ -1003,6 +1004,44 @@ String generalKeyboard(
 /// This calls the QUERTY keyboard. Returns the user typed strings, return the ASCII ESC character
 /// if the operation was cancelled
 String keyboard(String current_text, int max_size, const String &textbox_title) {
+#ifdef COSMIC_CARDPUTER
+    resetGlobals();
+    bool dirty = true;
+    while (true) {
+        if (dirty) {
+            tft->fillScreen(cosmic::background);
+            cosmic::header("Text entry");
+            cosmic::label(textbox_title.substring(0, 37), 8, 29);
+            tft->fillRoundRect(7, 48, 226, 43, 7, cosmic::surface);
+            cosmic::label(
+                current_text.substring(current_text.length() > 34 ? current_text.length() - 34 : 0),
+                13,
+                65,
+                cosmic::surface
+            );
+            cosmic::footer("ENTER Save  ESC Cancel  DEL Delete");
+            tft->display(false);
+            dirty = false;
+        }
+        keyStroke key = _getKeyPress();
+        bool escape = check(EscPress);
+        if ((escape || key.exit_key) && !key.del) return String(char(KEY_ESCAPE));
+        if (check(SelPress) || key.enter) {
+            resetGlobals();
+            return current_text;
+        }
+        if (key.pressed) {
+            if (key.del) {
+                if (current_text.length()) current_text.remove(current_text.length() - 1);
+            } else
+                for (char c : key.word)
+                    if (c >= 32 && c <= 126 && current_text.length() < max_size) current_text += c;
+            dirty = true;
+        }
+        launcherDelayMs(10);
+    }
+#endif
+
     max_FM_size = tftWidth / (LW * _fm) - 1;
     max_FP_size = tftWidth / (LW)-2;
     return generalKeyboard<qwerty_keyboard_height, qwerty_keyboard_width>(

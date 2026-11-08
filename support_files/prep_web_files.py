@@ -47,17 +47,10 @@ def load_checksum_file(input_file):
         return f.readline().strip()
 
 
-def minify_css(c):
-    minify_req = requests.post("https://www.toptal.com/developers/cssminifier/api/raw", {"input": c.read().decode('utf-8')})
-    return c if minify_req is False else minify_req.text.encode('utf-8')
-
-def minify_js(js):
-    minify_req = requests.post('https://www.toptal.com/developers/javascript-minifier/api/raw', {'input': js.read().decode('utf-8')})
-    return js if minify_req is False else minify_req.text.encode('utf-8')
-
-def minify_html(html):
-    minify_req = requests.post('https://www.toptal.com/developers/html-minifier/api/raw', {'input': html.read().decode('utf-8')})
-    return html if minify_req is False else minify_req.text.encode('utf-8')
+# Local gzip avoids sending UI sources to an external minifier or depending on its uptime.
+def minify_css(c): return c.read()
+def minify_js(c): return c.read()
+def minify_html(c): return c.read()
 
 # gzip web files
 def prepare_www_files():

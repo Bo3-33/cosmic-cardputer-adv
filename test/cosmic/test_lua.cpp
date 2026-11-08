@@ -9,6 +9,7 @@ static int installMockApi(lua_State *L) {
     lua_newtable(L);
     for (auto name : {"text", "line", "rect"}) { lua_pushcfunction(L, noop); lua_setfield(L, -2, name); }
     lua_setglobal(L, "ui");
+    lua_newtable(L); lua_pushcfunction(L, noop); lua_setfield(L, -2, "redraw"); lua_setglobal(L, "app");
     lua_newtable(L);
     for (auto name : {"background", "surface", "panel", "accent", "text"}) { lua_pushinteger(L, 1); lua_setfield(L, -2, name); }
     lua_setglobal(L, "theme");

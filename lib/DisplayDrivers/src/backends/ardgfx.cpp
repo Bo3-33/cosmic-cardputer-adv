@@ -463,7 +463,19 @@ Arduino_GFX *tft_display::outputDriver() {
 void tft_display::display(bool fullRefresh) {
     (void)fullRefresh;
 #if defined(USE_CANVAS)
-    if (_gfx) { RUN_ON_MUTEX(_gfx->flush(true)); }
+    if (_gfx) {
+#ifdef COSMIC_CARDPUTER
+        static uint32_t previous = 0;
+        static bool shown = false;
+        uint16_t *pixels = static_cast<Arduino_Canvas *>(_gfx)->getFramebuffer();
+        if (!pixels) return;
+        uint32_t hash = 2166136261u;
+        for (int i = 0; i < displayConfig.width * displayConfig.height; ++i) hash = (hash ^ pixels[i]) * 16777619u;
+        if (shown && hash == previous && !fullRefresh) return;
+        previous = hash; shown = true;
+#endif
+        RUN_ON_MUTEX(_gfx->flush(true));
+    }
 #endif
 }
 
