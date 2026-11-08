@@ -2,6 +2,9 @@
 #include "app_registry.h"
 #include "cardkb2.h"
 #include "cosmic.h"
+#ifdef COSMIC_CARDPUTER
+#include "controller_bridge.h"
+#endif
 #include "idf/idf_wifi.h"
 #include "idf/launcher_platform.h"
 #include "mykeyboard.h"
@@ -1316,6 +1319,9 @@ int loopOptions(std::vector<Option> &options, bool bright, uint16_t al, uint16_t
     int min_idx = 255;
     LongPressTmp = launcherMillis();
     while (1) {
+#ifdef COSMIC_CARDPUTER
+        controllerUsbMenuPoll();
+#endif
         if (redraw) {
             list = {};
             bool wasFirstDraw = firstDraw;

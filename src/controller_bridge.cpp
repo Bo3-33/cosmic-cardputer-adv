@@ -2,6 +2,7 @@
 #include "controller_bridge.h"
 #include "cosmic.h"
 #include "ds4_protocol.h"
+#include "gameboy_input.h"
 #include "idf/idf_wifi.h"
 #include "idf/launcher_platform.h"
 #include "mykeyboard.h"
@@ -336,6 +337,47 @@ bool controllerBridgeRunning() {
     return running;
 }
 void controllerBridgeStop() { stop(); }
+bool controllerUsbStart() {
+    stop();
+    return startUsb();
+}
+bool controllerUsbRead(ds4::State &sample) {
+    sample = ds4::State{};
+    portENTER_CRITICAL(&stateLock);
+    bool valid = usbReady && launcherMillis() - lastReport < 250;
+    if (valid) sample = state;
+    portEXIT_CRITICAL(&stateLock);
+    return valid;
+}
+namespace {
+bool usbMenuEnabled = false;
+uint8_t usbMenuPrevious = 0;
+unsigned long usbMenuRepeat = 0;
+} // namespace
+void controllerUsbMenuEnable(bool enabled) {
+    usbMenuEnabled = enabled;
+    usbMenuPrevious = 0;
+    usbMenuRepeat = 0;
+}
+void controllerUsbMenuPoll() {
+    if (!usbMenuEnabled) return;
+    ds4::State sample;
+    uint8_t held = controllerUsbRead(sample) ? uint8_t(~gameboy::pad(sample)) : 0;
+    uint8_t pressed = held & ~usbMenuPrevious;
+    unsigned long now = launcherMillis();
+    if (held != usbMenuPrevious) usbMenuRepeat = now + 350;
+    else if (held && now >= usbMenuRepeat) {
+        pressed |= held & 15;
+        usbMenuRepeat = now + 150;
+    }
+    usbMenuPrevious = held;
+    if (pressed & 1) NextPress = true;
+    if (pressed & 2) PrevPress = true;
+    if (pressed & 4) UpPress = true;
+    if (pressed & 8) DownPress = true;
+    if (pressed & (16 | 128)) SelPress = true;
+    if (pressed & 32) EscPress = true;
+}
 void controllerBridgeMenu() {
     String previous = cosmic::setTitle("Controller bridge");
     static bool loaded = false;

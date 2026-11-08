@@ -1,0 +1,1 @@
+{"name":"CosmicGB","version":"0.1.0","license":"MIT","build":{"includeDir":"src","flags":["-DAUDIO_SAMPLE_RATE=22050"]}}

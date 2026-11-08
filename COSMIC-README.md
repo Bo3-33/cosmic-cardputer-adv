@@ -6,6 +6,10 @@ Revision v0.2: buffered LCD frames, stable static screens, scrollable icon lists
 
 Revision v0.3 adds LG webOS and Roku Wi-Fi remotes under Apps, with saved addresses, discovery and LG pairing. See REMOTES.md for setup and controls. The 2 MB partition layout is unchanged.
 
+Revision v0.4 adds the Honeywell HYF290B IR fan remote under Apps, replaying the supplied Power/Oscillate/Fan Speed captures exactly. See FAN.md. Firmware-only update; partition layout unchanged.
+
+Revision v0.5 adds the native GB/GBC emulator with USB DualShock 4 controls and includes the Honeywell fan app from v0.4. See GAMEBOY.md and FAN.md. The partition layout is unchanged.
+
 A custom build of bmorcelli/Launcher with your COSMIC theme, a desktop dock, SD-card Lua apps, MP3/WAV Cover Flow music, a state-preserving app switcher, and a wired DualShock 4 → Wi-Fi → Luma3DS controller bridge.
 
 This build has compile and portable automated-test validation. It has not been flashed or tested on a physical Cardputer ADV or 2DS XL in this session. USB power, enumeration, keyboard behavior, real free memory, and gameplay latency need device testing.

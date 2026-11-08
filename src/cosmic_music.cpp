@@ -160,6 +160,7 @@ void cosmicMusicClose() {
     release();
     paused = true;
 }
+bool cosmicAudioCodecInit() { return codec(); }
 bool cosmicMusicLoaded() { return decoder != nullptr; }
 void cosmicMusicMenu() {
     if (!sdcardMounted && !setupSdCard()) {

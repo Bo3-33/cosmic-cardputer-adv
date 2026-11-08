@@ -2,6 +2,8 @@
 #include "cosmic_apps.h"
 #include "controller_bridge.h"
 #include "cosmic.h"
+#include "cosmic_fan.h"
+#include "cosmic_gameboy.h"
 #include "cosmic_lua.h"
 #include "cosmic_music.h"
 #include "cosmic_remotes.h"
@@ -416,6 +418,16 @@ void cosmicAppsMenu() {
         unsigned invalid;
         auto packages = scan(invalid);
         std::vector<Option> items = {
+            {"Game Boy / Color",
+             [&]() {
+                 cosmicGameboy();
+                 done = true;
+             }                            },
+            {"Honeywell Fan",
+             [&]() {
+                 cosmicHoneywellFan();
+                 done = true;
+             }                            },
             {"LG TV Remote",
              [&]() {
                  cosmicLgRemote();

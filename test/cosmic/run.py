@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 
 root = pathlib.Path(__file__).resolve().parents[2]
+subprocess.run(["python3", str(root / "test/cosmic/test_fan.py")], check=True)
 with tempfile.TemporaryDirectory(prefix="cosmic-tests-") as temp:
     build = pathlib.Path(temp)
     def run(args):
@@ -13,6 +14,9 @@ with tempfile.TemporaryDirectory(prefix="cosmic-tests-") as temp:
     run([build / "protocol"])
     run(["g++", "-std=c++17", "-Isrc", "-Ilib/CosmicLG/src", "test/cosmic/test_remotes.cpp", "-o", build / "remotes"])
     run([build / "remotes"])
+    run(["gcc", "-O2", "-c", "lib/CosmicGB/src/minigb_apu.c", "-o", build / "apu.o"])
+    run(["g++", "-std=c++17", "-O2", "-Isrc", "-Ilib/CosmicGB/src", "test/cosmic/test_gameboy.cpp", build / "apu.o", "-lm", "-o", build / "gameboy"])
+    run([build / "gameboy"])
     objects = []
     for source in sorted((root / "lib/Lua/src").glob("*.c")):
         if source.name in {"lua.c", "luac.c", "linit.c", "liolib.c", "loslib.c", "loadlib.c", "ldblib.c", "lcorolib.c"}:
