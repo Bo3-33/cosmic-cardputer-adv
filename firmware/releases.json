@@ -1,0 +1,218 @@
+{
+  "repository": "Bo3-33/cosmic-cardputer-adv",
+  "releases": [
+    {
+      "version": "v0.1",
+      "source_commit": "1b087eeb0847f80928dbbd20fe8a3112d3a68e09",
+      "summary": "Initial COSMIC-themed launcher development build, SD Lua apps and controller bridge.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 201,
+          "sha256": "1ab7eec183c4a24be9c34eb037cb5acd3e27f84025f15b593ecd291184b140b1"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.1-full.bin",
+          "bytes": 1538912,
+          "sha256": "1fda4e2543f7365ca32506362c60dc12b9f8c946aa0756784b84868b3a74b9d3"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.1-kit.zip",
+          "bytes": 21030485,
+          "sha256": "b69a59bf7210d388b1face8eb5a8dc7405f45c5d0871e722138ecc3e48b5013c"
+        }
+      ],
+      "launcher_partition_bytes": 2097152,
+      "merged_image_bytes": 1538912
+    },
+    {
+      "version": "v0.2",
+      "source_commit": "6fbbc91b3bca499442d3fcedb4318398555067d6",
+      "summary": "Buffered display, themed WebUI and app list, hosted apps and MP3/WAV Cover Flow music.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 201,
+          "sha256": "5a3cc9590777486ef44e296d4070697596e1a739523b705def8012dbe088a752"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.2-full.bin",
+          "bytes": 1678192,
+          "sha256": "1ebf9ccd521576bef94c0de3a93ae1e722e376d31c65da3c982c56a3e2830f78"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.2-kit.zip",
+          "bytes": 25408477,
+          "sha256": "a15a79c6a300a125e14e4c5e79df561624504a1b5605def3a105a8d83da4b47e"
+        }
+      ],
+      "launcher_partition_bytes": 2097152,
+      "merged_image_bytes": 1678192
+    },
+    {
+      "version": "v0.2.1",
+      "source_commit": "42ef187a5acd494533a30a77a50107544c3673c2",
+      "summary": "Saved-theme reload correction and a proper Wi-Fi status icon.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 205,
+          "sha256": "ebb3f1a146f26b208a79f0c49245bfa5b76145f501b9bff86ada3965af455408"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.2.1-full.bin",
+          "bytes": 1678304,
+          "sha256": "7dd4c5494f38e905518e8dcd2d332247d7258925e4340ad03611e77d934325b1"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.2.1-kit.zip",
+          "bytes": 25408805,
+          "sha256": "aed18acbbbc9f522f476ecec5e6a4ff63fbb33341da85a9f447742dcde53fedf"
+        }
+      ],
+      "launcher_partition_bytes": 2097152,
+      "merged_image_bytes": 1678304
+    },
+    {
+      "version": "v0.3",
+      "source_commit": "45b0cc9a80717fa3082aa62f689ca971f0e3260d",
+      "summary": "LG webOS and Roku Wi-Fi remote apps.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 201,
+          "sha256": "7d5343f3fafe566f4f9db9c451e4593a2bf255853656004347b632fdf19f831d"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.3-full.bin",
+          "bytes": 1830608,
+          "sha256": "de2c461e7af94fe7c08dbc1b14ec4351689a426cfeb143ee89ce5e3239a4c23e"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.3-kit.zip",
+          "bytes": 25600658,
+          "sha256": "4d850f944fe4c74905896f418c6e9f1e9dcee7bcebf89e2295e5f2cc9b22f10b"
+        }
+      ],
+      "launcher_partition_bytes": 2097152,
+      "merged_image_bytes": 1830608
+    },
+    {
+      "version": "v0.5",
+      "source_commit": "f7647192ea6d1fe277b38d08dab94a776deddd22",
+      "summary": "Game Boy/Game Boy Color emulator with USB DualShock 4 input, including Honeywell HYF290B IR fan remote.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 291,
+          "sha256": "6c58abbec28095052fd8cb7bf3f42732a80a8adecf760c06ac8de4798f4170ef"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.5-full.bin",
+          "bytes": 1879456,
+          "sha256": "24af5d4031f3c52fd7747c39f18785b6d924b76eb3b161f2c00e9dfb650ba120"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.5-kit.zip",
+          "bytes": 25708103,
+          "sha256": "9e577870278800593e2a7025e5f7711e6e9e6f30d2a4bf6eb1b7537c20d57077"
+        },
+        {
+          "name": "flash-cardputer-v0.5.py",
+          "bytes": 4162,
+          "sha256": "04b1887e3ae505f610392c28f6e423b9c934672a5641c55aa0b439176115f81f"
+        }
+      ],
+      "launcher_partition_bytes": 2097152,
+      "merged_image_bytes": 1879456
+    },
+    {
+      "version": "v0.6",
+      "source_commit": "968350616afba038ba32a7f7063deb8bf627e717",
+      "summary": "Standalone encrypted Authenticator with offline codes and direct read-only Proton sync after one-time PC pairing.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 291,
+          "sha256": "f006373de10c21fce41e4eb12a64a802653de3c8017c2bf28c029dd1664a4276"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.6-full.bin",
+          "bytes": 1905568,
+          "sha256": "2d8b55d07573d717ec8d2c4578b87c79d44bb781521de6cd680bf637f895c05e"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.6-kit.zip",
+          "bytes": 25781815,
+          "sha256": "2e6839dd09b2c05e609ca38b6d97219bbc6e5f03f98245918ad52fb9164d8cbb"
+        },
+        {
+          "name": "flash-cardputer-v0.6.py",
+          "bytes": 4162,
+          "sha256": "65618adcf6a42f70d141389b2e309e034a34ca67ff770ba7c2efc7e0ebcb6b40"
+        }
+      ],
+      "launcher_partition_bytes": 2097152,
+      "merged_image_bytes": 1905568
+    },
+    {
+      "version": "v0.7",
+      "source_commit": "9c18205fecac3cb282e2af951f2a9374e92ca36e",
+      "summary": "USB/Bluetooth LE keyboard and mouse with keyboard-only, mouse-only and simultaneous keyboard/gyro modes. Includes Authenticator. Requires the new 2.25 MB launcher partition.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 291,
+          "sha256": "a317cf1a140b3e6528220c9d407db61e6028e1b4bc135172f0b29dcdf1072db1"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.7-full.bin",
+          "bytes": 2216496,
+          "sha256": "1ba5ebf07a30862635270e4a93936123efe5f8385e566e49fa737aa33a6aa501"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.7-kit.zip",
+          "bytes": 27420438,
+          "sha256": "27db0eea344b4c4b5a810fdc2ac0e1b6f7079292f3dd8e750289251ea5ad0728"
+        },
+        {
+          "name": "flash-cardputer-v0.7.py",
+          "bytes": 4162,
+          "sha256": "ea3677090330977113ffc6c77fb3b9d8acd09d8bed63363420311dfbb45f1a8f"
+        }
+      ],
+      "launcher_partition_bytes": 2359296,
+      "merged_image_bytes": 2216496
+    },
+    {
+      "version": "v0.7.1",
+      "source_commit": "875cc279613242327fb73d720b47eaf6828badc2",
+      "summary": "Honeywell capture rechecked against the linked Flipper-IRDB file (same signal timings). Full-recording DMA IR transmission, emitter drive setting and T-key carrier diagnostic. Physical fan response remains unconfirmed.",
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 297,
+          "sha256": "f8cc36a08f31d415c124d18d3931e5ea5c022d58a3765b4b0f1df2aac4450dce"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.7.1-full.bin",
+          "bytes": 2217184,
+          "sha256": "bc46d6228a8cfdd8891cf8113951591b869c1324095e0f83e68886b438f197bd"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.7.1-kit.zip",
+          "bytes": 27423301,
+          "sha256": "cc0d68bd949a9c7948b947ba8c8a8053b56f516505c459ffb0bf8a1e7754d591"
+        },
+        {
+          "name": "flash-cardputer-v0.7.1.py",
+          "bytes": 4172,
+          "sha256": "b02c4426668c04943bc79b587c21392c2956dc278d57f59ef5b741f91ffdb2da"
+        }
+      ],
+      "launcher_partition_bytes": 2359296,
+      "merged_image_bytes": 2217184
+    }
+  ],
+  "missing_version_note": "v0.4 fan features are included in v0.5; no separate v0.4 binary was archived."
+}
