@@ -212,6 +212,35 @@
       ],
       "launcher_partition_bytes": 2359296,
       "merged_image_bytes": 2217216
+    },
+    {
+      "version": "v0.7.2",
+      "source_commit": "89c43c498804ee23cd236a213faec1a5d2b216f5",
+      "summary": "Case-insensitive filename search across both ROM folders, Clear search and no-match handling.",
+      "launcher_partition_bytes": 2359296,
+      "merged_image_bytes": 2218512,
+      "files": [
+        {
+          "name": "SHA256SUMS",
+          "bytes": 297,
+          "sha256": "34aee01b7e8c44bf55877fb53a2f6df6850b8883cf08361810f5aa370d595a71"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.7.2-full.bin",
+          "bytes": 2218512,
+          "sha256": "6baf9cf91b952865f8dc1b4ffd32727ec5a09ac8341215515110e9156a6a9305"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.7.2-kit.zip",
+          "bytes": 27429101,
+          "sha256": "874db60acb48508d8480ded231e6b6fc067dc8912c87fe5e6e597561bf32c8d0"
+        },
+        {
+          "name": "flash-cardputer-v0.7.2.py",
+          "bytes": 4172,
+          "sha256": "9de74cca9f3fba8b3950e245816edcf0f0d4018b07c3b948017f2f864326584d"
+        }
+      ]
     }
   ],
   "missing_version_note": "v0.4 fan features are included in v0.5; no separate v0.4 binary was archived."
