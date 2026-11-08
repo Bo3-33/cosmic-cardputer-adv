@@ -2,6 +2,8 @@
 
 Open Apps → Game Boy / Color. Put `.gb` files in `/roms/gb` and `.gbc` files in `/roms/gbc` on the SD card. This is a native app inside the launcher, not a separately booted firmware. No games or boot ROMs are included. Use uncompressed ROM files; ZIP archives are not read.
 
+**Search:** choose **Search games...** at the top of the ROM browser and type part of a filename on the Cardputer. Search ignores letter case and checks both ROM folders, including games beyond the first 128 unfiltered entries. Choose **Clear search** to restore the full list. ESC during text entry keeps the previous query; no matches leaves Search and Back available. At most 128 matching games are listed.
+
 Connect a wired DualShock 4 through the ADV's USB-C host port using a data-capable cable and suitable adapter/power setup. USB power and controller enumeration remain hardware-dependent. The ADV cannot use that port for a PC serial/flashing connection while acting as the controller's USB host. Hold G0 while connecting to your PC to recover download mode when needed.
 
 Entering the emulator starts the existing USB host and stops 2DS XL input forwarding, sending neutral inputs first. Controller input is then local to the game. The ROM browser and pause menu support DualShock D-pad/left stick navigation, Cross to select, Circle to go back and OPTIONS to select. The Cardputer keyboard can navigate these menus too.

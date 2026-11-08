@@ -127,7 +127,7 @@ Each release kit records its actual build and test results in `BUILD-VALIDATION.
 ## Versions and source history
 
 All preserved firmware versions have separate releases: **v0.1, v0.2, v0.2.1,
-v0.3, v0.5, v0.6, v0.7 and v0.7.1**. v0.4's fan feature was included in v0.5; a separate
+v0.3, v0.5, v0.6, v0.7, v0.7.1 and v0.7.2**. v0.4's fan feature was included in v0.5; a separate
 v0.4 binary was not archived. The v0.1 kit originally had an unversioned filename.
 
 Tags import the matching source saved inside each original release kit. This is

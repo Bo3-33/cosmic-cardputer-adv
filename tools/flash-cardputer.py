@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Back up and flash COSMIC v0.7.1 on an ESP32-S3 Cardputer ADV."""
+"""Back up and flash COSMIC v0.7.2 on an ESP32-S3 Cardputer ADV."""
 import argparse
 import hashlib
 import json
@@ -9,8 +9,8 @@ import subprocess
 import sys
 from datetime import datetime
 
-IMAGE = 'cosmic-cardputer-adv-v0.7.1-full.bin'
-EXPECTED_SHA256 = '6b478268bb1cdf6694d6baae3c6055ac95757ccd8ae0ab03606bd7beb9ce7620'
+IMAGE = 'cosmic-cardputer-adv-v0.7.2-full.bin'
+EXPECTED_SHA256 = '6baf9cf91b952865f8dc1b4ffd32727ec5a09ac8341215515110e9156a6a9305'
 
 
 def digest(path):
@@ -38,7 +38,7 @@ def main():
     if not firmware.is_file():
         raise RuntimeError(f'Put {IMAGE} beside this script: {here}')
     if digest(firmware) != EXPECTED_SHA256:
-        raise RuntimeError('Firmware checksum mismatch. Download the original v0.7.1 image again; nothing was flashed.')
+        raise RuntimeError('Firmware checksum mismatch. Download the original v0.7.2 image again; nothing was flashed.')
 
     env = os.environ.copy()
     project = here.parent
@@ -62,7 +62,7 @@ def main():
     directory = (args.backup_dir or here / 'backups').resolve()
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-    backup = directory / f'cardputer-before-v0.7.1-{stamp}.bin'
+    backup = directory / f'cardputer-before-v0.7.2-{stamp}.bin'
     partial = backup.with_suffix('.bin.partial')
     print(f'Firmware verified. Port: {port}', flush=True)
     print(f'Backing up all 8 MB to {backup}', flush=True)
@@ -71,7 +71,7 @@ def main():
         raise RuntimeError(f'Incomplete backup: {partial}. Nothing was flashed.')
     partial.rename(backup)
     backup.with_suffix('.bin.sha256').write_text(f'{digest(backup)}  {backup.name}\n')
-    print('Backup complete. Installing COSMIC v0.7.1 at 0x0...', flush=True)
+    print('Backup complete. Installing COSMIC v0.7.2 at 0x0...', flush=True)
     subprocess.run(prefix + ['write-flash', '0x0', str(firmware)], env=env, check=True)
     print(f'Finished. Backup: {backup}\nRestart the Cardputer if it does not restart automatically.')
 

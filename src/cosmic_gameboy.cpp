@@ -356,7 +356,7 @@ void play(const String &path) {
     }
     cleanup();
 }
-void scan(const String &directory, std::vector<Option> &items) {
+void scan(const String &directory, const String &query, std::vector<Option> &items) {
     File root = SD.open(directory);
     if (!root || !root.isDirectory()) return;
     for (File file = root.openNextFile(); file && items.size() < 128; file = root.openNextFile()) {
@@ -365,7 +365,8 @@ void scan(const String &directory, std::vector<Option> &items) {
         if (slash >= 0) name = name.substring(slash + 1);
         String lower = name;
         lower.toLowerCase();
-        if (!file.isDirectory() && (lower.endsWith(".gb") || lower.endsWith(".gbc"))) {
+        if (!file.isDirectory() && (lower.endsWith(".gb") || lower.endsWith(".gbc")) &&
+            (query.isEmpty() || lower.indexOf(query) >= 0)) {
             String path = directory + "/" + name;
             items.push_back({name, [path]() { play(path); }});
         }
@@ -382,20 +383,53 @@ void cosmicGameboy() {
         displayError("USB host unavailable; reboot ADV", true);
         return;
     }
-    std::vector<Option> items;
-    scan("/roms/gb", items);
-    scan("/roms/gbc", items);
-    if (items.empty()) {
-        displayMsg("Put .gb/.gbc games in /roms/gb or /roms/gbc", true);
-        return;
-    }
-    std::sort(items.begin(), items.end(), [](const Option &a, const Option &b) { return a.label < b.label; });
+    String query;
     String previous = cosmic::setTitle("Game Boy / Game Boy Color");
-    resetGlobals();
-    controllerUsbMenuEnable(true);
-    loopOptions(items);
-    controllerUsbMenuEnable(false);
-    returnToMenu = false;
+    while (true) {
+        String lower = query;
+        lower.toLowerCase();
+        std::vector<Option> games;
+        // Filter while scanning, before the 128-result cap, so a search can find
+        // games beyond the first unfiltered page of a large SD collection.
+        scan("/roms/gb", lower, games);
+        scan("/roms/gbc", lower, games);
+        std::sort(games.begin(), games.end(), [](const Option &a, const Option &b) {
+            String left = a.label, right = b.label;
+            left.toLowerCase();
+            right.toLowerCase();
+            return left < right;
+        });
+        bool rebuild = false;
+        std::vector<Option> items;
+        items.push_back({query.isEmpty() ? "Search games..." : String("Search: ") + query, [&]() {
+                             controllerUsbMenuEnable(false);
+                             String edited = keyboard(query, 48, "Search ROM filename");
+                             if (edited != String(char(KEY_ESCAPE))) {
+                                 edited.trim();
+                                 query = edited;
+                             }
+                             rebuild = true;
+                         }});
+        if (!query.isEmpty())
+            items.push_back({"Clear search", [&]() {
+                                 query = "";
+                                 rebuild = true;
+                             }});
+        if (games.empty())
+            items.push_back(
+                {query.isEmpty() ? "No ROMs in /roms/gb or /roms/gbc" : "No matching games",
+                 [&]() { rebuild = true; }}
+            );
+        for (auto &game : games) items.push_back(std::move(game));
+        items.push_back({"Back", []() {}});
+        cosmic::setTitle(query.isEmpty() ? "Game Boy / Game Boy Color" : String("Games: ") + query);
+        resetGlobals();
+        controllerUsbMenuEnable(true);
+        loopOptions(items);
+        controllerUsbMenuEnable(false);
+        returnToMenu = false;
+        if (!rebuild) break;
+    }
     cosmic::setTitle(previous);
 }
 #endif
