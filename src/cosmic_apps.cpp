@@ -8,6 +8,7 @@
 #include "cosmic_hid.h"
 #include "cosmic_lua.h"
 #include "cosmic_music.h"
+#include "cosmic_ollee.h"
 #include "cosmic_remotes.h"
 #include "idf/launcher_platform.h"
 #include "mykeyboard.h"
@@ -420,6 +421,11 @@ void cosmicAppsMenu() {
         unsigned invalid;
         auto packages = scan(invalid);
         std::vector<Option> items = {
+            {"Ollee Watch Clock",
+             [&]() {
+                 cosmicOllee();
+                 done = true;
+             }                            },
             {"Keyboard & Mouse",
              [&]() {
                  cosmicHidMenu();

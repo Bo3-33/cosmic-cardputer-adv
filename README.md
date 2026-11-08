@@ -17,6 +17,7 @@ features still need real-device validation. Keep a working backup before updatin
 
 | App | What it does |
 | --- | --- |
+| Ollee Watch Clock | Wi-Fi time → Bluetooth clock sync for Ollee hardware 01.05.00 / firmware 00.01.11; experimental, with reviewed home-location fields |
 | Keyboard & Mouse | USB or Bluetooth LE HID; keyboard only, mouse only, or simultaneous keyboard + gyro mouse; tilt and arrow fallback |
 | Authenticator | Encrypted local vault, offline TOTP/Steam codes, direct read-only Proton Wi-Fi sync after one-time PC pairing |
 | Game Boy / Color | SD ROM browser, GB/GBC emulation and battery saves; physical keyboard or USB DualShock 4 |
@@ -79,6 +80,7 @@ logs, commercial games and music are not distributed.
 
 ## Guides
 
+- [Ollee watch clock setup and compatibility](cosmic-docs/OLLEE.md)
 - [USB/Bluetooth keyboard and gyro mouse](cosmic-docs/KEYBOARD-MOUSE.md)
 - [Authenticator pairing, encryption and sync](cosmic-docs/AUTHENTICATOR.md)
 - [GB/GBC ROMs, saves and DualShock controls](cosmic-docs/GAMEBOY.md)
@@ -143,7 +145,7 @@ Each release kit records its actual build and test results in `BUILD-VALIDATION.
 ## Versions and source history
 
 All preserved firmware versions have separate releases: **v0.1, v0.2, v0.2.1,
-v0.3, v0.5, v0.6, v0.7, v0.7.1 and v0.7.2**. v0.4's fan feature was included in v0.5; a separate
+v0.3, v0.5, v0.6, v0.7, v0.7.1, v0.7.2 and v0.8**. v0.4's fan feature was included in v0.5; a separate
 v0.4 binary was not archived. The v0.1 kit originally had an unversioned filename.
 
 Tags import the matching source saved inside each original release kit. This is

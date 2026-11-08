@@ -4,6 +4,7 @@
 #include "authenticator_ca.h"
 #include "authenticator_core.h"
 #include "cosmic.h"
+#include "cosmic_clock.h"
 #include "idf/idf_wifi.h"
 #include "idf/launcher_platform.h"
 #include "mykeyboard.h"
@@ -333,16 +334,10 @@ int request(Vault &v, const String &endpoint, JsonDocument &reply, const String 
     return code == 1000 || code == 1001 ? 200 : -4;
 }
 bool clockSync() {
-    if (!launcherWifiIsConnected() && !connectWifi()) return false;
     busy("Setting clock over Wi-Fi...");
-    sntp_set_sync_status(SNTP_SYNC_STATUS_RESET);
-    configTime(0, 0, "time.cloudflare.com", "pool.ntp.org");
-    for (int i = 0; i < 100; ++i) {
-        if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED && time(nullptr) > 1704067200) return true;
-        launcherDelayMs(100);
-    }
-    return false;
+    return cosmicSyncClock();
 }
+
 bool sync(Vault &v, String &status) {
     if (!v.data["session"]["RefreshToken"].is<const char *>()) {
         status = "No Proton pairing in this vault";

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Back up and flash COSMIC v0.7.2 on an ESP32-S3 Cardputer ADV."""
+"""Back up and flash COSMIC v0.8 on an ESP32-S3 Cardputer ADV."""
 import argparse
 import hashlib
 import json
@@ -11,8 +11,8 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).resolve().parent / "cardputer"))
 from flash_preserve import prepare_update
 
-IMAGE = 'cosmic-cardputer-adv-v0.7.2-full.bin'
-EXPECTED_SHA256 = '6baf9cf91b952865f8dc1b4ffd32727ec5a09ac8341215515110e9156a6a9305'
+IMAGE = 'cosmic-cardputer-adv-v0.8-full.bin'
+EXPECTED_SHA256 = 'bf672df7029e8f8839e1fabc0e4af9f7bf65589ca77136b159f05723a12b888f'
 
 
 def digest(path):
@@ -42,7 +42,7 @@ def main():
     if not firmware.is_file():
         raise RuntimeError(f'Put {IMAGE} beside this script: {here}')
     if digest(firmware) != EXPECTED_SHA256:
-        raise RuntimeError('Firmware checksum mismatch. Download the original v0.7.2 image again; nothing was flashed.')
+        raise RuntimeError('Firmware checksum mismatch. Download the original v0.8 image again; nothing was flashed.')
 
     env = os.environ.copy()
     project = here.parent
@@ -66,7 +66,7 @@ def main():
     directory = (args.backup_dir or here / 'backups').resolve()
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-    backup = directory / f'cardputer-before-v0.7.2-{stamp}.bin'
+    backup = directory / f'cardputer-before-v0.8-{stamp}.bin'
     partial = backup.with_suffix('.bin.partial')
     print(f'Firmware verified. Port: {port}', flush=True)
     print(f'Backing up all 8 MB to {backup}', flush=True)
@@ -75,7 +75,7 @@ def main():
         raise RuntimeError(f'Incomplete backup: {partial}. Nothing was flashed.')
     partial.rename(backup)
     backup.with_suffix('.bin.sha256').write_text(f'{digest(backup)}  {backup.name}\n')
-    print('Backup complete. Installing COSMIC v0.7.2 at 0x0...', flush=True)
+    print('Backup complete. Installing COSMIC v0.8 at 0x0...', flush=True)
     write_image = firmware
     if not args.reset_config:
         write_image = backup.with_suffix('.update.bin')

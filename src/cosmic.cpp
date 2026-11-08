@@ -79,7 +79,12 @@ void boot(bool force) {
     tft->display(false);
 }
 void drawIcon(const String &name, int x, int y) {
-    if (name == "Keyboard & Mouse") {
+    if (name == "Ollee Watch Clock") {
+        tft->drawRoundRect(x + 5, y, 10, 19, 3, text);
+        tft->drawCircle(x + 10, y + 9, 5, text);
+        tft->drawLine(x + 10, y + 9, x + 10, y + 6, accent);
+        tft->drawLine(x + 10, y + 9, x + 13, y + 9, accent);
+    } else if (name == "Keyboard & Mouse") {
         tft->drawRoundRect(x, y + 5, 19, 12, 2, text);
         for (int row = 0; row < 2; ++row)
             for (int col = 0; col < 4; ++col) tft->fillRect(x + 3 + col * 4, y + 8 + row * 4, 2, 2, accent);
