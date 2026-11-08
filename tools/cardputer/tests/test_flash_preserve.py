@@ -32,6 +32,16 @@ class PreserveTests(unittest.TestCase):
             image,backup,dest=self.run_case(old,new)
             with self.assertRaises(RuntimeError):prepare_update(image,backup,dest)
             self.assertFalse(dest.exists())
+    def test_partition_table_checksum_rejects_corruption(self):
+        import hashlib
+        data=fixture(); pos=0x8000+3*32
+        data[pos:pos+16]=b'\xeb\xeb'+b'\xff'*14
+        data[pos+16:pos+32]=hashlib.md5(data[0x8000:pos]).digest()
+        data[0x8000+12]^=1
+        image,backup,dest=self.run_case(data,fixture())
+        with self.assertRaises(RuntimeError):prepare_update(image,backup,dest)
+        self.assertFalse(dest.exists())
+
     def test_full_backup_required(self):
         image,backup,dest=self.run_case(fixture(),fixture());backup.write_bytes(b'short')
         with self.assertRaises(RuntimeError):prepare_update(image,backup,dest)

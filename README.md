@@ -50,7 +50,9 @@ backs up SD files; install the release kit's SD app files separately as below.
 
 1. Download the latest **kit** from [Releases](https://github.com/Bo3-33/cosmic-cardputer-adv/releases).
 2. Extract it, then run its matching `flash-cardputer.py`. It checks the image
-   checksum and backs up all 8 MB of flash before writing the merged image at `0x0`.
+   checksum and backs up all 8 MB of flash, then preserves compatible settings
+   before writing. For an intentional first/clean install use `--reset-config`.
+   The updated installer includes `flash_preserve.py`; keep it beside the script.
 3. If no device appears: unplug USB, switch the ADV OFF, hold **G0** while
    connecting a USB-C data cable, then release G0 after power-up.
 4. Extract the kit's `sdcard.zip` to your existing SD card. No reformat is needed.

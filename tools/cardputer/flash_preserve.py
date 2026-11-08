@@ -1,6 +1,7 @@
 """Prepare a private update image preserving compatible ESP32 settings partitions."""
 from pathlib import Path
 import os
+import hashlib
 import struct
 
 FLASH_SIZE = 0x800000
@@ -11,7 +12,11 @@ def partitions(data):
     result = []
     for pos in range(0x8000, 0x9000, 32):
         magic = struct.unpack_from('<H', data, pos)[0]
-        if magic in (0xffff, 0xebeb):
+        if magic == 0xebeb:
+            if hashlib.md5(data[0x8000:pos]).digest() != data[pos+16:pos+32]:
+                raise RuntimeError('Partition table checksum mismatch; refusing update.')
+            break
+        if magic == 0xffff:
             break
         if magic != 0x50aa:
             raise RuntimeError('Invalid partition table; use --reset-config only for an intentional clean install.')
@@ -44,7 +49,8 @@ def prepare_update(image, backup, destination):
             raise RuntimeError('Settings/filesystem partition was removed or renamed. Refusing to discard it; use --reset-config for an intentional reset.')
         n = candidates[0]
         same = n['offset'] == p['offset'] and n['size'] == p['size']
-        if (p['flags'] != n['flags'] or ((p['flags'] & 1 or p['subtype'] != 2) and not same)
+        encrypted_nvs = p['subtype'] == 2 and any(x['kind'] == 1 and x['subtype'] == 4 for x in old)
+        if ((encrypted_nvs and not same) or p['flags'] != n['flags'] or ((p['flags'] & 1 or p['subtype'] != 2) and not same)
                 or n['size'] < p['size']):
             raise RuntimeError('Incompatible settings partition layout; existing backup retained. No flash write started.')
         if n['offset'] >= len(update) and same:

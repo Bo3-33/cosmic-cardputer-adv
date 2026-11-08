@@ -222,8 +222,8 @@
       "files": [
         {
           "name": "SHA256SUMS",
-          "bytes": 297,
-          "sha256": "34aee01b7e8c44bf55877fb53a2f6df6850b8883cf08361810f5aa370d595a71"
+          "bytes": 381,
+          "sha256": "19e895a399a6e700e73fb6f400d2fb0d4aa30f4f0916d3383732d30e27d703f8"
         },
         {
           "name": "cosmic-cardputer-adv-v0.7.2-full.bin",
@@ -232,15 +232,21 @@
         },
         {
           "name": "cosmic-cardputer-adv-v0.7.2-kit.zip",
-          "bytes": 27429101,
-          "sha256": "874db60acb48508d8480ded231e6b6fc067dc8912c87fe5e6e597561bf32c8d0"
+          "bytes": 27431172,
+          "sha256": "293e48324d61228a17971570e0b8fb2ee6ce865bd792624e09222a53e9a93f99"
         },
         {
           "name": "flash-cardputer-v0.7.2.py",
-          "bytes": 4172,
-          "sha256": "9de74cca9f3fba8b3950e245816edcf0f0d4018b07c3b948017f2f864326584d"
+          "bytes": 4680,
+          "sha256": "b31cfc981c6f46ea3cf0b72015f98b93fe20dda1cd058927b28946aa9b3bfb23"
+        },
+        {
+          "name": "flash_preserve.py",
+          "bytes": 3783,
+          "sha256": "04f40d75c19fa9dfac6fa95bebf0a2926f32c415d50d63ad3077f559890d4797"
         }
-      ]
+      ],
+      "installer_note": "Installer updated to preserve compatible configuration; firmware binary and original firmware source snapshot unchanged."
     }
   ],
   "missing_version_note": "v0.4 fan features are included in v0.5; no separate v0.4 binary was archived."
