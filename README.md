@@ -34,6 +34,20 @@ files boot separately through the original Launcher firmware manager.
 
 ## Install
 
+For a Linux command that downloads the newest GitHub firmware and makes dated
+firmware/SD backups, see [Cardputer updater](tools/cardputer/README.md).
+From a source checkout:
+
+```sh
+sh tools/cardputer/install.sh
+export PATH="$HOME/.local/bin:$PATH"
+cardputer --all --fix-permissions
+```
+
+The SD card must be in your computer's card reader for its backup. This command
+backs up SD files; install the release kit's SD app files separately as below.
+
+
 1. Download the latest **kit** from [Releases](https://github.com/Bo3-33/cosmic-cardputer-adv/releases).
 2. Extract it, then run its matching `flash-cardputer.py`. It checks the image
    checksum and backs up all 8 MB of flash before writing the merged image at `0x0`.
@@ -156,3 +170,4 @@ README is retained as [README-UPSTREAM.md](README-UPSTREAM.md), and its MIT
 
 This is an unofficial project, unaffiliated with M5Stack, System76/COSMIC,
 Proton, Apple, Sony, Nintendo, LG, Roku or Honeywell.
+
