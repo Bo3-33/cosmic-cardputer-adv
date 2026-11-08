@@ -1,5 +1,6 @@
 
 #include "settings.h"
+#include "cosmic.h"
 #include "display.h"
 #include "esp_mac.h"
 #include "idf/idf_wifi.h"
@@ -300,6 +301,9 @@ int applySettingsFromRoot(JsonObject setting) {
         log_i("applySettingsFromRoot: missing favorite");
     }
 
+#ifdef COSMIC_CARDPUTER
+    cosmic::applyTheme();
+#endif
     return count;
 }
 
@@ -1191,6 +1195,9 @@ void defaultValues() {
     ALCOLOR = 0xF800;
     odd_color = 0x30c5;
     even_color = 0x32e5;
+#endif
+#ifdef COSMIC_CARDPUTER
+    cosmic::applyTheme();
 #endif
     dev_mode = false;
     autoConnect = true;

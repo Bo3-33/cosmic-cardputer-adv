@@ -40,7 +40,14 @@ void label(const String &s, int x, int y, uint16_t bg, int size) {
 void header(const String &title) {
     tft->fillRect(0, 0, tftWidth, 18, panel);
     label(title.substring(0, 26), 7, 5, panel);
-    label(launcherWifiIsConnected() ? "W" : "-", tftWidth - 65, 5, panel);
+    int wx = tftWidth - 66;
+    uint16_t signal = launcherWifiIsConnected() ? text : surface;
+    tft->drawLine(wx, 6, wx + 6, 3, signal);
+    tft->drawLine(wx + 6, 3, wx + 12, 6, signal);
+    tft->drawLine(wx + 3, 9, wx + 6, 7, signal);
+    tft->drawLine(wx + 6, 7, wx + 9, 9, signal);
+    tft->fillCircle(wx + 6, 12, 1, signal);
+    if (!launcherWifiIsConnected()) tft->drawLine(wx, 3, wx + 12, 14, text);
     int battery = std::max(0, std::min(100, getBattery()));
     tft->drawRoundRect(tftWidth - 47, 4, 39, 11, 2, text);
     tft->fillRect(tftWidth - 8, 7, 2, 5, text);

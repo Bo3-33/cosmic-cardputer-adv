@@ -1,5 +1,7 @@
 # COSMIC Cardputer ADV launcher — development build
 
+Revision v0.2.1 fixes saved colors being reloaded during Wi-Fi connection and replaces the header letter with connected/disconnected Wi-Fi icons.
+
 Revision v0.2: buffered LCD frames, stable static screens, scrollable icon lists, Controller Bridge and Music inside Apps, themed physical-keyboard entry, and a redesigned WebUI including settings dialogs. See MUSIC.md for MP3/WAV setup.
 
 A custom build of bmorcelli/Launcher with your COSMIC theme, a desktop dock, SD-card Lua apps, MP3/WAV Cover Flow music, a state-preserving app switcher, and a wired DualShock 4 → Wi-Fi → Luma3DS controller bridge.
