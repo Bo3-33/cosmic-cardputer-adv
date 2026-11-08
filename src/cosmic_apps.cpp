@@ -5,6 +5,7 @@
 #include "cosmic_authenticator.h"
 #include "cosmic_fan.h"
 #include "cosmic_gameboy.h"
+#include "cosmic_hid.h"
 #include "cosmic_lua.h"
 #include "cosmic_music.h"
 #include "cosmic_remotes.h"
@@ -419,6 +420,11 @@ void cosmicAppsMenu() {
         unsigned invalid;
         auto packages = scan(invalid);
         std::vector<Option> items = {
+            {"Keyboard & Mouse",
+             [&]() {
+                 cosmicHidMenu();
+                 done = true;
+             }                            },
             {"Authenticator",
              [&]() {
                  cosmicAuthenticator();

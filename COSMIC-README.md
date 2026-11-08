@@ -1,5 +1,10 @@
 # COSMIC Cardputer ADV launcher — development build
 
+Revision v0.7 adds the native USB/Bluetooth LE Keyboard & Mouse app, three input
+modes, gyro/tilt/arrow pointers and themed controls. It includes v0.6 Authenticator.
+The launcher partition grows to 2.25 MB: use the full flashing script and backup.
+See KEYBOARD-MOUSE.md and OPENBUBBLES.md.
+
 Revision v0.6 adds Apps > Authenticator: encrypted local vault, offline TOTP/Steam
 codes and direct read-only Proton Wi-Fi sync after one-time computer pairing.
 See AUTHENTICATOR.md for setup, supported login options and validation limits.
@@ -25,12 +30,12 @@ This build has compile and portable automated-test validation. It has not been f
 - `APP-FORMAT.md`: app package and API specification.
 - `cosmic-source.zip`: buildable source including vendored dependencies, SDK template and portable tests; upstream vendor datasheets, reference photos and examples are omitted. The build downloads the pinned ESP32 toolchain/framework as needed.
 
-The custom launcher uses a 2 MB test-app partition in the ADV's 8 MB flash. It does not add PSRAM. Remaining flash is managed by the existing Launcher partition manager. This layout differs from upstream: back up existing firmware, partitions and settings before the first full flash; existing firmware partitions can overlap the expanded launcher region. Do not install this first build as an app-only OTA update against the old partition table. No device has been erased or flashed here.
+The current custom launcher uses a 2.25 MB test-app partition (v0.2–v0.6 used 2 MB) in the ADV's 8 MB flash. It does not add PSRAM. Remaining flash is managed by the existing Launcher partition manager. This layout differs from upstream: back up existing firmware, partitions and settings before the first full flash; existing firmware partitions can overlap the expanded launcher region. Do not install this first build as an app-only OTA update against the old partition table. No device has been erased or flashed here.
 
 ## First install
 
 1. Back up the ADV's current flash and any SD-card data you need.
-2. Put the ADV into download mode if required: power off, hold G0, power on.
+2. Put the ADV into download mode if required: unplug USB, switch OFF, hold G0 while connecting the USB data cable, then release G0 after power-up.
 3. Use an ESP32 flasher with **ESP32-S3**, flash size **8 MB**, the full image and address **0x0**. With esptool installed, the equivalent command is:
 
    ```sh

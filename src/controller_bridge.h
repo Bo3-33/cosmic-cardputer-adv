@@ -5,6 +5,7 @@
 bool controllerBridgeRunning();
 void controllerBridgeStop();
 bool controllerUsbStart();
+bool controllerUsbHostActive();
 bool controllerUsbRead(ds4::State &sample);
 void controllerUsbMenuEnable(bool enabled);
 void controllerUsbMenuPoll();

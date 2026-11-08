@@ -79,7 +79,11 @@ void boot(bool force) {
     tft->display(false);
 }
 void drawIcon(const String &name, int x, int y) {
-    if (name == "Authenticator") {
+    if (name == "Keyboard & Mouse") {
+        tft->drawRoundRect(x, y + 5, 19, 12, 2, text);
+        for (int row = 0; row < 2; ++row)
+            for (int col = 0; col < 4; ++col) tft->fillRect(x + 3 + col * 4, y + 8 + row * 4, 2, 2, accent);
+    } else if (name == "Authenticator") {
         tft->drawRoundRect(x + 2, y + 7, 15, 11, 2, text);
         tft->drawRoundRect(x + 5, y, 9, 12, 4, text);
         tft->fillCircle(x + 9, y + 12, 2, accent);

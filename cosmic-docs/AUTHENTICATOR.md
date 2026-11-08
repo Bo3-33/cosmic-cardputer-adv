@@ -14,8 +14,9 @@ creation, editing and deletion of accounts are not provided.
 
 ## Install and pair
 
-1. Flash the v0.6 firmware with the included flashing script. It backs up the
-   existing 8 MB flash first. No partition-layout change from v0.5 is needed.
+1. Flash v0.6 or newer with its matching flashing script. It backs up the
+   existing 8 MB flash first. v0.7 uses a larger 2.25 MB launcher partition; use
+   the full image and matching partition table for that version.
 2. Enable sync in the official Proton Authenticator app and let it upload.
 3. Install **git** and **Bun >=1.1** on your computer if needed. Bun installation:
    <https://bun.com/docs/installation>.

@@ -350,7 +350,7 @@ bool sync(Vault &v, String &status) {
         status = "Set the clock before syncing";
         return false;
     }
-    if (ESP.getFreeHeap() < 130000) {
+    if (ESP.getFreeHeap() < 100000) {
         status = "Close other apps, then retry sync";
         return false;
     }

@@ -1,6 +1,7 @@
 .pio
 .vscode
 *.bin
+!test/cosmic/auth-fixtures/*.bin
 include/webFiles.h
 checksum.sha256
 build
@@ -9,8 +10,6 @@ __pycache__
 docs
 managed_components
 sdkconfig.*
-
-!test/cosmic/auth-fixtures/*.bin
 
 # Personal/runtime data must never be committed.
 .pio/

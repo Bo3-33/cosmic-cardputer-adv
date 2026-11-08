@@ -2,6 +2,8 @@
 #include "powerSave.h"
 #ifdef COSMIC_CARDPUTER
 #include "controller_bridge.h"
+#include "cosmic_hid.h"
+#include "mykeyboard.h"
 #endif
 #include <Adafruit_TCA8418.h>
 #include <Keyboard.h>
@@ -17,6 +19,26 @@ Keyboard_Class Keyboard;
 // TCA8418 keyboard controller for ADV variant
 Adafruit_TCA8418 tca;
 bool UseTCA8418 = false; // Set to true to use TCA8418 (Cardputer ADV)
+#ifdef COSMIC_CARDPUTER
+namespace {
+bool hidCapture = false, hidReset = false;
+uint64_t hidKeys = 0;
+} // namespace
+void cardputerHidCapture(bool enabled) {
+    launcherInputLock();
+    hidCapture = enabled;
+    hidKeys = 0;
+    hidReset = true;
+    resetGlobals();
+    launcherInputUnlock();
+}
+uint64_t cardputerHidKeys() {
+    launcherInputLock();
+    uint64_t keys = hidKeys;
+    launcherInputUnlock();
+    return keys;
+}
+#endif
 
 // Keyboard state variables
 bool fn_key_pressed = false;
@@ -160,6 +182,37 @@ void InputHandler(void) {
     static bool esc = false;
     static bool selReported = false;
     static bool escReported = false;
+
+#ifdef COSMIC_CARDPUTER
+    if (hidReset) {
+        sel = prev = next = up = down = esc = selReported = escReported = false;
+        fn_key_pressed = shift_key_pressed = false;
+        nextRepeatTime = prevRepeatTime = upRepeatTime = downRepeatTime = 0;
+        hidReset = false;
+    }
+    if (hidCapture) {
+        if (UseTCA8418) {
+            while (tca.available() > 0) {
+                int event = tca.getEvent();
+                uint8_t row, col;
+                mapRawKeyToPhysical(event & 0x7f, row, col);
+                if (row < 4 && col < 14) {
+                    uint64_t bit = 1ULL << (row * 14 + col);
+                    if (event & 0x80) hidKeys |= bit;
+                    else hidKeys &= ~bit;
+                }
+            }
+            tca.writeRegister(TCA8418_REG_INT_STAT, 1);
+            kb_interrupt = false;
+        } else {
+            Keyboard.update();
+            hidKeys = 0;
+            for (const auto &p : Keyboard.keyList())
+                if (p.y < 4 && p.x < 14) hidKeys |= 1ULL << (p.y * 14 + p.x);
+        }
+        return;
+    }
+#endif
 
     if (!UseTCA8418 && launcherMillis() - tm < 200 && !LongPress) return;
 

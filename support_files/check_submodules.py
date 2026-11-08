@@ -26,7 +26,7 @@ def run_command(cmd, cwd):
 
 
 print("Checking submodules...")
-if not (ROOT / ".git").exists():
+if (ROOT / ".cosmic-vendored").exists() or not (ROOT / ".git").exists():
     # Release source archives include dependencies but deliberately omit Git metadata.
     required = [
         ROOT / "lib/Arduino_GFX/src/Arduino_GFX.h",

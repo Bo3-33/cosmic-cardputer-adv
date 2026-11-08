@@ -12,6 +12,8 @@ with tempfile.TemporaryDirectory(prefix="cosmic-tests-") as temp:
         subprocess.run([str(x) for x in args], check=True, cwd=root)
     run(["g++", "-std=c++17", "-Wall", "-Wextra", "-DAUTH_HOST", "-Isrc", "-Ilib/ArduinoJson/src", "src/authenticator_core.cpp", "test/cosmic/test_authenticator.cpp", "-lcrypto", "-o", build / "authenticator"])
     run([build / "authenticator", root / "test/cosmic/auth-fixtures"])
+    run(["g++", "-std=c++17", "-Wall", "-Wextra", "-DCOSMIC_HID_HOST", "-Ilib/CosmicHID/src", "lib/CosmicHID/src/core/input_router.cpp", "lib/CosmicHID/src/core/keymap.cpp", "lib/CosmicHID/src/core/mouse_engine.cpp", "lib/CosmicHID/src/core/settings.cpp", "test/cosmic/test_hid.cpp", "-o", build / "hid"])
+    run([build / "hid"])
     run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Isrc", "test/cosmic/test_protocol.cpp", "-o", build / "protocol"])
     run([build / "protocol"])
     run(["g++", "-std=c++17", "-Isrc", "-Ilib/CosmicLG/src", "test/cosmic/test_remotes.cpp", "-o", build / "remotes"])

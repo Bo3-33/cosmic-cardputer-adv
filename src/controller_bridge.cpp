@@ -1,6 +1,7 @@
 #ifdef COSMIC_CARDPUTER
 #include "controller_bridge.h"
 #include "cosmic.h"
+#include "cosmic_hid.h"
 #include "ds4_protocol.h"
 #include "gameboy_input.h"
 #include "idf/idf_wifi.h"
@@ -199,6 +200,10 @@ void worker(void *) {
     }
 }
 bool startUsb() {
+    if (cosmicHidUsbActive()) {
+        status("USB HID active; reboot for DS4");
+        return false;
+    }
     if (usbInstalled) return true;
     if (usbAttempted) {
         status("USB init failed; reboot required");
@@ -337,6 +342,7 @@ bool controllerBridgeRunning() {
     return running;
 }
 void controllerBridgeStop() { stop(); }
+bool controllerUsbHostActive() { return usbAttempted; }
 bool controllerUsbStart() {
     stop();
     return startUsb();
