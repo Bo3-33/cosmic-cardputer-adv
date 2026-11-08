@@ -7,7 +7,7 @@ bin_dir=${CARDPUTER_BIN_HOME:-"$HOME/.local/bin"}
 python3 -m venv "$install_dir/venv"
 "$install_dir/venv/bin/python" -m pip install -r "$source_dir/requirements.txt"
 mkdir -p "$bin_dir"
-cp "$source_dir/cardputer.py" "$source_dir/connect-cardputer.py" "$install_dir/"
+cp "$source_dir/cardputer.py" "$source_dir/connect-cardputer.py" "$source_dir/flash_preserve.py" "$install_dir/"
 "$install_dir/venv/bin/python" - "$install_dir" "$bin_dir" <<'PY'
 from pathlib import Path
 import shlex

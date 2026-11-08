@@ -8,6 +8,8 @@ from pathlib import Path
 import subprocess
 import sys
 from datetime import datetime
+sys.path.insert(0, str(Path(__file__).resolve().parent / "cardputer"))
+from flash_preserve import prepare_update
 
 IMAGE = 'cosmic-cardputer-adv-v0.7.2-full.bin'
 EXPECTED_SHA256 = '6baf9cf91b952865f8dc1b4ffd32727ec5a09ac8341215515110e9156a6a9305'
@@ -29,9 +31,11 @@ def choose_port(ports):
 
 
 def main():
+    os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', help='Serial device, e.g. /dev/ttyACM0; otherwise auto-detect Espressif USB')
     parser.add_argument('--backup-dir', type=Path, help='Backup destination; defaults to backups beside this script')
+    parser.add_argument('--reset-config', action='store_true', help='Explicit clean install without preserving settings')
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     firmware = here / IMAGE
@@ -72,7 +76,12 @@ def main():
     partial.rename(backup)
     backup.with_suffix('.bin.sha256').write_text(f'{digest(backup)}  {backup.name}\n')
     print('Backup complete. Installing COSMIC v0.7.2 at 0x0...', flush=True)
-    subprocess.run(prefix + ['write-flash', '0x0', str(firmware)], env=env, check=True)
+    write_image = firmware
+    if not args.reset_config:
+        write_image = backup.with_suffix('.update.bin')
+        kept = prepare_update(firmware, backup, write_image)
+        print('Preserving device settings: ' + ', '.join(kept), flush=True)
+    subprocess.run(prefix + ['write-flash', '0x0', str(write_image)], env=env, check=True)
     print(f'Finished. Backup: {backup}\nRestart the Cardputer if it does not restart automatically.')
 
 

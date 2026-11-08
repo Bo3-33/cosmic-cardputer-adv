@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Back up Cardputer firmware/SD and install a verified COSMIC release."""
 import argparse
+from flash_preserve import prepare_update
 import fcntl
 import getpass
 import hashlib
@@ -250,6 +251,7 @@ def run(command, env=None):
 
 
 def main():
+    os.umask(0o077)
     p = argparse.ArgumentParser(description=__doc__, epilog='Examples: cardputer --all --fix-permissions | cardputer --backup-sd | cardputer --backup-firmware | cardputer --flash --release 0.5')
     p.add_argument('--backup-firmware', action='store_true', help='Back up all 8 MB of flash')
     p.add_argument('--backup-sd', action='store_true', help='Back up all SD files, including hidden files, to a tar archive')
@@ -263,6 +265,7 @@ def main():
     p.add_argument('--backup-dir', type=Path, default=ROOT / 'backups', help='Parent backup directory')
     p.add_argument('--fix-permissions', action='store_true', help='Use sudo setfacl if serial access is denied')
     p.add_argument('--dry-run', action='store_true', help='Show the plan without mounting, connecting, backing up or flashing')
+    p.add_argument('--reset-config', action='store_true', help='Explicit clean install: do not preserve device settings')
     a = p.parse_args()
     flash = a.flash or a.all
     backup_flash = a.backup_firmware or flash
@@ -348,7 +351,15 @@ def main():
         if flash:
             if sha256(image) != checksum:
                 raise RuntimeError('Firmware changed during backup; refusing to flash.')
-            run(prefix + ['write-flash', '0x0', str(image)], env)
+            write_image = image
+            if not a.reset_config:
+                write_image = folder / 'update-preserving-config.bin'
+                kept = prepare_update(image, folder / 'firmware-original.bin', write_image)
+                metadata['preserved_partitions'] = kept
+                metadata['prepared_image_sha256'] = sha256(write_image)
+                (folder / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
+                print('Preserving device settings: ' + ', '.join(kept), flush=True)
+            run(prefix + ['write-flash', '0x0', str(write_image)], env)
         print(f'Done. Backups: {folder}', flush=True)
         if backup_flash:
             print('Cardputer left in download mode. Disconnect USB and power-cycle it to run firmware.')

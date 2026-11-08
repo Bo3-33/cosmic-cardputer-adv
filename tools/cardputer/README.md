@@ -82,3 +82,21 @@ python3 -m unittest discover -s tools/cardputer/tests -v
 ```
 
 Tests mock hardware/network access; they never flash your device.
+
+## Preserve configuration during updates
+
+Updates preserve compatible NVS settings by default: saved Wi-Fi credentials,
+launcher preferences, remote pairing keys and Bluetooth bonds. SD files, including
+config.conf and app data, are not changed. After validating the original firmware
+and making a full backup, the updater creates a private prepared image containing
+the old settings. It does not modify the downloaded firmware. Boot-selection data
+is refreshed with the new firmware rather than restored from the old installation.
+
+If a settings partition is missing, smaller, renamed or incompatible, flashing
+stops before writing. Use `--reset-config` only for an intentional clean install
+or first installation with no readable old partition table. Firmware that changes
+its own settings schema may still require migration; this keeps the stored bytes.
+
+Keep `flash_preserve.py` beside `cardputer.py` (the installer copies it automatically).
+The standalone `flash-cardputer.py` also needs this helper beside it, or under
+`tools/cardputer` when used from the source checkout.
