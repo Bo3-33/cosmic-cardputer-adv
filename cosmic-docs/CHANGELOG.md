@@ -5,6 +5,7 @@ built; their validation notes and limitations remain part of each kit.
 
 | Version | Changes | Archive |
 | --- | --- | --- |
+| v0.7.1 | Rechecked linked HYF290B capture (same signals); DMA IR transmission, emitter drive setting and T carrier diagnostic | Full image and kit |
 | v0.7 | USB/BLE keyboard and mouse, simultaneous typing/gyro, tilt/arrow fallback; 2.25 MB launcher partition | Full image and kit |
 | v0.6 | Encrypted standalone Authenticator; direct read-only Proton sync after PC pairing | Full image and kit |
 | v0.5 | GB/GBC emulator with USB DualShock 4 controls, including Honeywell fan app | Full image and kit |

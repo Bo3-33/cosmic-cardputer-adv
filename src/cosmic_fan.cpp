@@ -12,18 +12,24 @@ void cosmicHoneywellFan() {
     rmt_channel_handle_t channel = nullptr;
     rmt_encoder_handle_t encoder = nullptr;
     bool enabled = false;
+    gpio_drive_cap_t previousDrive = GPIO_DRIVE_CAP_2;
+    gpio_get_drive_capability(GPIO_NUM_44, &previousDrive);
     auto cleanup = [&]() {
         if (channel && enabled) rmt_disable(channel);
         if (encoder) rmt_del_encoder(encoder);
         if (channel) rmt_del_channel(channel);
         gpio_set_direction(GPIO_NUM_44, GPIO_MODE_OUTPUT);
         gpio_set_level(GPIO_NUM_44, 0);
+        gpio_set_drive_capability(GPIO_NUM_44, previousDrive);
     };
     rmt_tx_channel_config_t config = {};
     config.gpio_num = GPIO_NUM_44;
     config.clk_src = RMT_CLK_SRC_DEFAULT;
     config.resolution_hz = 1000000;
-    config.mem_block_symbols = 64;
+    // Keep the complete recording in DMA memory instead of refilling the small
+    // S3 RMT memory while other launcher/Wi-Fi tasks are running.
+    config.mem_block_symbols = 256;
+    config.flags.with_dma = true;
     config.trans_queue_depth = 1;
     esp_err_t result = rmt_new_tx_channel(&config, &channel);
     rmt_copy_encoder_config_t copy = {};
@@ -32,6 +38,7 @@ void cosmicHoneywellFan() {
     carrier.frequency_hz = honeywell::frequency;
     carrier.duty_cycle = honeywell::duty;
     if (result == ESP_OK) result = rmt_apply_carrier(channel, &carrier);
+    if (result == ESP_OK) result = gpio_set_drive_capability(GPIO_NUM_44, GPIO_DRIVE_CAP_3);
     if (result == ESP_OK) {
         result = rmt_enable(channel);
         enabled = result == ESP_OK;
@@ -43,7 +50,7 @@ void cosmicHoneywellFan() {
     }
     int selected = 0;
     bool dirty = true;
-    String status = "Point the ADV IR emitter at the fan";
+    String status = "Point IR at fan; T tests the emitter";
     resetGlobals();
     while (true) {
         if (check(EscPress)) break;
@@ -76,7 +83,7 @@ void cosmicHoneywellFan() {
                 }
             }
             cosmic::label(status.substring(0, 38), 7, 106);
-            cosmic::footer("ENTER Send   Arrows Choose   ESC Back");
+            cosmic::footer("ENTER Send  T IR test  ESC Back");
             tft->display(false);
             dirty = false;
         }
@@ -94,6 +101,7 @@ void cosmicHoneywellFan() {
             }
             rmt_transmit_config_t tx = {};
             tx.loop_count = 0; // Captures already contain their repeats: transmit the full recording once.
+            tx.flags.eot_level = 0;
             result = rmt_transmit(channel, encoder, symbols, symbolCount * sizeof(rmt_symbol_word_t), &tx);
             if (result == ESP_OK) {
                 // Keep the symbol storage alive until the hardware finishes, even on a timeout.
@@ -104,6 +112,33 @@ void cosmicHoneywellFan() {
                                       : String("IR error: ") + esp_err_to_name(result);
             resetGlobals(); // Do not turn a held Enter into extra toggle transmissions.
             dirty = true;
+        }
+        auto key = _getKeyPress();
+        bool test = false;
+        for (char c : key.word)
+            if (c == 't' || c == 'T') test = true;
+        if (test) {
+            // A 200 ms carrier burst for checking the emitter with an IR viewer.
+            // It is deliberately not a Power toggle or a sweep of unknown codes.
+            rmt_symbol_word_t symbols[5] = {};
+            for (int i = 0; i < 4; ++i) {
+                symbols[i].level0 = symbols[i].level1 = 1;
+                symbols[i].duration0 = symbols[i].duration1 = 25000;
+            }
+            symbols[4].level0 = 0;
+            symbols[4].duration0 = 1000;
+            symbols[4].level1 = 0;
+            symbols[4].duration1 = 1;
+            rmt_transmit_config_t tx = {};
+            result = rmt_transmit(channel, encoder, symbols, sizeof(symbols), &tx);
+            if (result == ESP_OK) {
+                result = rmt_tx_wait_all_done(channel, 1000);
+                if (result != ESP_OK) rmt_tx_wait_all_done(channel, -1);
+            }
+            status = result == ESP_OK ? "IR test sent (not a fan command)"
+                                      : String("IR error: ") + esp_err_to_name(result);
+            dirty = true;
+            resetGlobals();
         }
         launcherDelayMs(10);
     }

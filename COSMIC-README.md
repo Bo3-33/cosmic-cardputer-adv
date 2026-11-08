@@ -1,5 +1,9 @@
 # COSMIC Cardputer ADV launcher — development build
 
+Revision v0.7.1 rechecks the linked fan capture (identical signal data), uses DMA
+for full-capture IR transmission and adds a T-key emitter diagnostic. Fan response
+still needs physical validation. See FAN.md.
+
 Revision v0.7 adds the native USB/Bluetooth LE Keyboard & Mouse app, three input
 modes, gyro/tilt/arrow pointers and themed controls. It includes v0.6 Authenticator.
 The launcher partition grows to 2.25 MB: use the full flashing script and backup.

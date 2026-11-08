@@ -42,7 +42,7 @@ files boot separately through the original Launcher firmware manager.
 4. Extract the kit's `sdcard.zip` to your existing SD card. No reformat is needed.
 5. Press ENTER at boot to open the launcher, then choose **Apps**.
 
-The v0.7 launcher uses a **2.25 MB** partition in the ADV's 8 MB flash. Versions
+The v0.7 and v0.7.1 builds use a **2.25 MB** partition in the ADV's 8 MB flash. Versions
 v0.2–v0.6 used 2 MB. Use the full image and matching partition table when upgrading
 to v0.7; an app-only write is insufficient. Previously installed standalone
 firmware can overlap the expanded region and may need reinstalling. Keep the
@@ -73,6 +73,10 @@ logs, commercial games and music are not distributed.
 - [OpenBubbles feasibility](cosmic-docs/OPENBUBBLES.md)
 
 ## Important limits
+
+The Honeywell capture has not operated the user's fan. The newly linked file has
+the same signal data; v0.7.1 adds DMA transmission and an emitter diagnostic,
+with physical compatibility still unconfirmed.
 
 The ADV has no PSRAM in this build. Close background apps when memory is low.
 USB keyboard/device mode and USB DualShock/host mode share one controller; reboot
@@ -123,7 +127,7 @@ Each release kit records its actual build and test results in `BUILD-VALIDATION.
 ## Versions and source history
 
 All preserved firmware versions have separate releases: **v0.1, v0.2, v0.2.1,
-v0.3, v0.5, v0.6 and v0.7**. v0.4's fan feature was included in v0.5; a separate
+v0.3, v0.5, v0.6, v0.7 and v0.7.1**. v0.4's fan feature was included in v0.5; a separate
 v0.4 binary was not archived. The v0.1 kit originally had an unversioned filename.
 
 Tags import the matching source saved inside each original release kit. This is
