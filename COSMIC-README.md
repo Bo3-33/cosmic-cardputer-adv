@@ -4,6 +4,8 @@ Revision v0.2.1 fixes saved colors being reloaded during Wi-Fi connection and re
 
 Revision v0.2: buffered LCD frames, stable static screens, scrollable icon lists, Controller Bridge and Music inside Apps, themed physical-keyboard entry, and a redesigned WebUI including settings dialogs. See MUSIC.md for MP3/WAV setup.
 
+Revision v0.3 adds LG webOS and Roku Wi-Fi remotes under Apps, with saved addresses, discovery and LG pairing. See REMOTES.md for setup and controls. The 2 MB partition layout is unchanged.
+
 A custom build of bmorcelli/Launcher with your COSMIC theme, a desktop dock, SD-card Lua apps, MP3/WAV Cover Flow music, a state-preserving app switcher, and a wired DualShock 4 → Wi-Fi → Luma3DS controller bridge.
 
 This build has compile and portable automated-test validation. It has not been flashed or tested on a physical Cardputer ADV or 2DS XL in this session. USB power, enumeration, keyboard behavior, real free memory, and gameplay latency need device testing.

@@ -4,6 +4,7 @@
 #include "cosmic.h"
 #include "cosmic_lua.h"
 #include "cosmic_music.h"
+#include "cosmic_remotes.h"
 #include "idf/launcher_platform.h"
 #include "mykeyboard.h"
 #include "powerSave.h"
@@ -415,6 +416,16 @@ void cosmicAppsMenu() {
         unsigned invalid;
         auto packages = scan(invalid);
         std::vector<Option> items = {
+            {"LG TV Remote",
+             [&]() {
+                 cosmicLgRemote();
+                 done = true;
+             }                            },
+            {"Roku Remote",
+             [&]() {
+                 cosmicRokuRemote();
+                 done = true;
+             }                            },
             {"Music",
              [&]() {
                  cosmicMusicMenu();
