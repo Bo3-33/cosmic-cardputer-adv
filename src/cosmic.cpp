@@ -79,7 +79,11 @@ void boot(bool force) {
     tft->display(false);
 }
 void drawIcon(const String &name, int x, int y) {
-    if (name.indexOf("Controller") >= 0 || name.indexOf("bridge") >= 0) {
+    if (name == "Authenticator") {
+        tft->drawRoundRect(x + 2, y + 7, 15, 11, 2, text);
+        tft->drawRoundRect(x + 5, y, 9, 12, 4, text);
+        tft->fillCircle(x + 9, y + 12, 2, accent);
+    } else if (name.indexOf("Controller") >= 0 || name.indexOf("bridge") >= 0) {
         tft->drawRoundRect(x, y + 3, 18, 12, 4, text);
         tft->drawLine(x + 3, y + 9, x + 9, y + 9, text);
         tft->drawLine(x + 6, y + 6, x + 6, y + 12, text);

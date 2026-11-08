@@ -1,5 +1,9 @@
 # COSMIC Cardputer ADV launcher — development build
 
+Revision v0.6 adds Apps > Authenticator: encrypted local vault, offline TOTP/Steam
+codes and direct read-only Proton Wi-Fi sync after one-time computer pairing.
+See AUTHENTICATOR.md for setup, supported login options and validation limits.
+
 Revision v0.2.1 fixes saved colors being reloaded during Wi-Fi connection and replaces the header letter with connected/disconnected Wi-Fi icons.
 
 Revision v0.2: buffered LCD frames, stable static screens, scrollable icon lists, Controller Bridge and Music inside Apps, themed physical-keyboard entry, and a redesigned WebUI including settings dialogs. See MUSIC.md for MP3/WAV setup.

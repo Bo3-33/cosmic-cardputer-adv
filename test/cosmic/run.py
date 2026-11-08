@@ -10,6 +10,8 @@ with tempfile.TemporaryDirectory(prefix="cosmic-tests-") as temp:
     build = pathlib.Path(temp)
     def run(args):
         subprocess.run([str(x) for x in args], check=True, cwd=root)
+    run(["g++", "-std=c++17", "-Wall", "-Wextra", "-DAUTH_HOST", "-Isrc", "-Ilib/ArduinoJson/src", "src/authenticator_core.cpp", "test/cosmic/test_authenticator.cpp", "-lcrypto", "-o", build / "authenticator"])
+    run([build / "authenticator", root / "test/cosmic/auth-fixtures"])
     run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Isrc", "test/cosmic/test_protocol.cpp", "-o", build / "protocol"])
     run([build / "protocol"])
     run(["g++", "-std=c++17", "-Isrc", "-Ilib/CosmicLG/src", "test/cosmic/test_remotes.cpp", "-o", build / "remotes"])

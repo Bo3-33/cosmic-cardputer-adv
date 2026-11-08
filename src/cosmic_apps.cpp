@@ -2,6 +2,7 @@
 #include "cosmic_apps.h"
 #include "controller_bridge.h"
 #include "cosmic.h"
+#include "cosmic_authenticator.h"
 #include "cosmic_fan.h"
 #include "cosmic_gameboy.h"
 #include "cosmic_lua.h"
@@ -418,6 +419,11 @@ void cosmicAppsMenu() {
         unsigned invalid;
         auto packages = scan(invalid);
         std::vector<Option> items = {
+            {"Authenticator",
+             [&]() {
+                 cosmicAuthenticator();
+                 done = true;
+             }                            },
             {"Game Boy / Color",
              [&]() {
                  cosmicGameboy();
