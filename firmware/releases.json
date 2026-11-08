@@ -186,32 +186,32 @@
     },
     {
       "version": "v0.7.1",
-      "source_commit": "875cc279613242327fb73d720b47eaf6828badc2",
+      "source_commit": "2e45753028fc28668e0ccde40ee843e758c7c784",
       "summary": "Honeywell capture rechecked against the linked Flipper-IRDB file (same signal timings). Full-recording DMA IR transmission, emitter drive setting and T-key carrier diagnostic. Physical fan response remains unconfirmed.",
       "files": [
         {
           "name": "SHA256SUMS",
           "bytes": 297,
-          "sha256": "f8cc36a08f31d415c124d18d3931e5ea5c022d58a3765b4b0f1df2aac4450dce"
+          "sha256": "1dd03c355642e152440ccf083aca12f5e54cd78b42d868630280d640393e0f3d"
         },
         {
           "name": "cosmic-cardputer-adv-v0.7.1-full.bin",
-          "bytes": 2217184,
-          "sha256": "bc46d6228a8cfdd8891cf8113951591b869c1324095e0f83e68886b438f197bd"
+          "bytes": 2217216,
+          "sha256": "6b478268bb1cdf6694d6baae3c6055ac95757ccd8ae0ab03606bd7beb9ce7620"
         },
         {
           "name": "cosmic-cardputer-adv-v0.7.1-kit.zip",
-          "bytes": 27423301,
-          "sha256": "cc0d68bd949a9c7948b947ba8c8a8053b56f516505c459ffb0bf8a1e7754d591"
+          "bytes": 27423379,
+          "sha256": "26555cc1b27ee8ed1287c75a351e93adcbb85393dcbb6767210a0645ac0855d8"
         },
         {
           "name": "flash-cardputer-v0.7.1.py",
           "bytes": 4172,
-          "sha256": "b02c4426668c04943bc79b587c21392c2956dc278d57f59ef5b741f91ffdb2da"
+          "sha256": "e2a5360918c941a9c649b48ad6de40229ac426307724088b4b7a97eeedbaf25e"
         }
       ],
       "launcher_partition_bytes": 2359296,
-      "merged_image_bytes": 2217184
+      "merged_image_bytes": 2217216
     }
   ],
   "missing_version_note": "v0.4 fan features are included in v0.5; no separate v0.4 binary was archived."

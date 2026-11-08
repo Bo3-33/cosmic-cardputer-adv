@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 IMAGE = 'cosmic-cardputer-adv-v0.7.1-full.bin'
-EXPECTED_SHA256 = 'bc46d6228a8cfdd8891cf8113951591b869c1324095e0f83e68886b438f197bd'
+EXPECTED_SHA256 = '6b478268bb1cdf6694d6baae3c6055ac95757ccd8ae0ab03606bd7beb9ce7620'
 
 
 def digest(path):
