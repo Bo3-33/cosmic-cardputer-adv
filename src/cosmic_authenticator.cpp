@@ -11,6 +11,7 @@
 #include "sd_functions.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <cstddef>
 #include <cstring>
 #include <esp_random.h>
 #include <esp_sntp.h>
@@ -20,24 +21,29 @@
 namespace {
 // Wipe document arenas and temporary ciphertext/plaintext buffers on release.
 class SecretAllocator : public ArduinoJson::Allocator {
+    struct alignas(std::max_align_t) Header {
+        size_t size;
+    };
+
 public:
     void *allocate(size_t n) override {
-        auto *p = static_cast<size_t *>(malloc(n + sizeof(size_t)));
+        if (n > authcore::maxVault * 4) return nullptr;
+        auto *p = static_cast<Header *>(malloc(n + sizeof(Header)));
         if (!p) return nullptr;
-        *p = n;
+        p->size = n;
         return p + 1;
     }
     void deallocate(void *p) override {
         if (!p) return;
-        auto *b = static_cast<size_t *>(p) - 1;
-        authcore::wipe(p, *b);
+        auto *b = static_cast<Header *>(p) - 1;
+        authcore::wipe(p, b->size);
         free(b);
     }
     void *reallocate(void *p, size_t n) override {
         if (!p) return allocate(n);
         void *q = allocate(n);
         if (!q) return nullptr;
-        memcpy(q, p, std::min(n, *(static_cast<size_t *>(p) - 1)));
+        memcpy(q, p, std::min(n, (static_cast<Header *>(p) - 1)->size));
         deallocate(p);
         return q;
     }
