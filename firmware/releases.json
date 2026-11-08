@@ -247,6 +247,45 @@
         }
       ],
       "installer_note": "Installer updated to preserve compatible configuration; firmware binary and original firmware source snapshot unchanged."
+    },
+    {
+      "version": "v0.8",
+      "source_commit": "5281c417cb85bd81e3e34e3e5ffb183495166055",
+      "summary": "Experimental Ollee Watch Clock: fresh Wi-Fi time, BLE scan/selection, hardware/firmware guard, reviewed clock/location/tide write and validated acknowledgement. Targets HW 01.05.00 / FW 00.01.11; physical compatibility remains untested.",
+      "launcher_partition_bytes": 2359296,
+      "merged_image_bytes": 2253312,
+      "files": [
+        {
+          "name": "OLLEE.md",
+          "bytes": 3916,
+          "sha256": "3cae70db217e564e06863730461945b8ee213a3ce561a80b300e50b7cd7286ce"
+        },
+        {
+          "name": "SHA256SUMS",
+          "bytes": 450,
+          "sha256": "ab593f39959312f397b876a55877c645e44cdb19262ea30e025bfcd31b0ebb66"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.8-full.bin",
+          "bytes": 2253312,
+          "sha256": "bf672df7029e8f8839e1fabc0e4af9f7bf65589ca77136b159f05723a12b888f"
+        },
+        {
+          "name": "cosmic-cardputer-adv-v0.8-kit.zip",
+          "bytes": 27484243,
+          "sha256": "7e4ebfc8719313d1778a2bc48c2830d8a03b835225213952890a16bd84f93f11"
+        },
+        {
+          "name": "flash-cardputer-v0.8.py",
+          "bytes": 4670,
+          "sha256": "d79d04eb18df506be0b9388285a9a5a651dc644555c52d74fab30c387a54d36f"
+        },
+        {
+          "name": "flash_preserve.py",
+          "bytes": 3783,
+          "sha256": "04f40d75c19fa9dfac6fa95bebf0a2926f32c415d50d63ad3077f559890d4797"
+        }
+      ]
     }
   ],
   "missing_version_note": "v0.4 fan features are included in v0.5; no separate v0.4 binary was archived."
