@@ -1,0 +1,689 @@
+
+#include "massStorage.h"
+#include "display.h"
+#include "idf/launcher_platform.h"
+#include "sd_functions.h"
+#if defined(SOC_USB_OTG_SUPPORTED) && !defined(DISABLE_MASS_STORAGE)
+#include "esp_private/usb_phy.h"
+#include "tusb.h"
+#include <algorithm>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#if defined(SDM_SD)
+#include "diskio.h"
+#endif
+#if CONFIG_IDF_TARGET_ESP32P4
+#include "esp_private/periph_ctrl.h"
+#include "hal/usb_serial_jtag_ll.h"
+#include "hal/usb_wrap_ll.h"
+#include "soc/lp_system_struct.h"
+#include "soc/usb_wrap_struct.h"
+#elif CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+#include "hal/clk_gate_ll.h"
+#include "soc/periph_defs.h"
+#include "soc/rtc_cntl_reg.h"
+#include "soc/usb_wrap_struct.h"
+#endif
+
+bool MassStorage::shouldStop = false;
+
+namespace {
+usb_phy_handle_t s_usbPhy = nullptr;
+TaskHandle_t s_usbDeviceTask = nullptr;
+bool s_usbStarted = false;
+bool s_usbMounted = false;
+
+// Temporary MSC I/O tracing to a log file for debugging the macOS mount failure
+// (https://github.com/bmorcelli/Launcher/issues/424). Disable once resolved.
+#define MSC_DEBUG_LOG 1
+#if MSC_DEBUG_LOG
+constexpr const char *kMscLogPath = "/Launcher_error.log";
+
+// Lines are kept in RAM while the host has the card and written out once USB mode ends:
+// appending to the FAT volume from here would write behind the host's back (and stall
+// the SCSI command being served while it does).
+char s_mscLog[1024];
+size_t s_mscLogLen = 0;
+
+void mscLog(const char *fmt, ...) {
+    const size_t avail = sizeof(s_mscLog) - s_mscLogLen;
+    if (avail < 2) return;
+    va_list args;
+    va_start(args, fmt);
+    const int n = vsnprintf(s_mscLog + s_mscLogLen, avail - 1, fmt, args);
+    va_end(args);
+    if (n < 0) return;
+    s_mscLogLen += std::min<size_t>(n, avail - 2);
+    s_mscLog[s_mscLogLen++] = '\n';
+}
+
+void flushMscLog() {
+    if (s_mscLogLen == 0) return;
+    // Remount first: FatFs still caches the FAT as it was before the host wrote to it.
+    SDM.end();
+    sdcardMounted = false;
+    if (setupSdCard()) {
+        File f = SDM.open(kMscLogPath, FILE_APPEND, true);
+        if (f) {
+            f.write(reinterpret_cast<const uint8_t *>(s_mscLog), s_mscLogLen);
+            f.close();
+        }
+    }
+    s_mscLogLen = 0;
+}
+#define MSC_LOG(...) mscLog(__VA_ARGS__)
+#else
+#define MSC_LOG(...)
+#endif
+
+constexpr uint8_t kUsbItfMsc = 0;
+constexpr uint8_t kUsbEpOut = 0x01;
+constexpr uint8_t kUsbEpIn = 0x81;
+
+// The ESP32-P4 has two OTG controllers, and TinyUSB maps them as rhport 0 = the full-speed
+// one (which shares the two FSLS PHYs with USB_SERIAL_JTAG) and rhport 1 = the high-speed
+// one (which has its own dedicated UTMI PHY). Which controller reaches the board's device
+// connector is a property of the board, not of the chip:
+//
+//   m5stack-tab5         USB-C wired to FSLS PHY0        -> full speed, rhport 0
+//   lilygo-t-display-p4  USB-C silkscreened "High Speed" -> high speed, rhport 1
+//
+// Boards on the high-speed port define USB_MSC_HIGH_SPEED. Everything below keys off that,
+// so the full-speed path stays exactly as it was.
+#if defined(USB_MSC_HIGH_SPEED)
+constexpr uint8_t kUsbRhPort = 1;
+constexpr uint16_t kUsbEpSize = 512; // high-speed bulk endpoints must be 512 bytes
+#else
+constexpr uint8_t kUsbRhPort = 0;
+constexpr uint16_t kUsbEpSize = 64;
+#endif
+
+constexpr tusb_desc_device_t kDeviceDescriptor = {
+    sizeof(tusb_desc_device_t),
+    TUSB_DESC_DEVICE,
+    0x0200,
+    0x00, // bDeviceClass    - defined at interface level (fixes macOS MSC enumeration)
+    0x00, // bDeviceSubClass - defined at interface level
+    0x00, // bDeviceProtocol - defined at interface level
+    CFG_TUD_ENDPOINT0_SIZE,
+    0x303A,
+    0x1001,
+    0x0100,
+    0x01,
+    0x02,
+    0x03,
+    0x01,
+};
+
+constexpr uint8_t kConfigDescriptor[] = {
+    TUD_CONFIG_DESCRIPTOR(
+        1, 1, 0, TUD_CONFIG_DESC_LEN + TUD_MSC_DESC_LEN, TUSB_DESC_CONFIG_ATT_SELF_POWERED, 500
+    ),
+    TUD_MSC_DESCRIPTOR(kUsbItfMsc, 4, kUsbEpOut, kUsbEpIn, kUsbEpSize),
+};
+
+const char *kUsbStrings[] = {
+    "",
+    "M5Stack",
+    "Launcher SD",
+    "TAB5-SD",
+    "MSC",
+};
+
+void resetUsbDevicePeripheral() {
+#if CONFIG_IDF_TARGET_ESP32P4 && !defined(USB_MSC_HIGH_SPEED)
+    // USB_WRAP is the full-speed controller's wrapper; the high-speed controller is a
+    // separate peripheral and is reset by usb_new_phy()/usb_del_phy() instead.
+    PERIPH_RCC_ATOMIC() { _usb_wrap_ll_reset_register(); }
+#elif CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+    REG_CLR_BIT(RTC_CNTL_USB_CONF_REG, RTC_CNTL_IO_MUX_RESET_DISABLE);
+    REG_CLR_BIT(RTC_CNTL_USB_CONF_REG, RTC_CNTL_USB_RESET_DISABLE);
+    periph_ll_reset(PERIPH_USB_MODULE);
+    periph_ll_enable_clk_clear_rst(PERIPH_USB_MODULE);
+#endif
+}
+
+void usbDeviceTask(void *param) {
+    (void)param;
+    while (true) {
+        tud_task();
+        bool mounted = tud_mounted();
+        if (mounted != s_usbMounted) {
+            s_usbMounted = mounted;
+            drawUSBStickIcon(mounted);
+        }
+        vTaskDelay(1);
+    }
+}
+
+void restoreUsbSerial() {
+// Only the full-speed path steals the pads from USB_SERIAL_JTAG, so only it has to hand
+// them back. On a high-speed board the console never moved.
+#if CONFIG_IDF_TARGET_ESP32P4 && !defined(USB_MSC_HIGH_SPEED)
+    PERIPH_RCC_ATOMIC() { _usb_wrap_ll_enable_bus_clock(false); }
+    usb_wrap_ll_phy_enable_pad(&USB_WRAP, false);
+    PERIPH_RCC_ATOMIC() {
+        _usb_serial_jtag_ll_enable_bus_clock(true);
+        (usb_serial_jtag_ll_reset_register)();
+    }
+    usb_serial_jtag_ll_phy_set_defaults();
+    LP_SYS.usb_ctrl.sw_hw_usb_phy_sel = 1;
+    LP_SYS.usb_ctrl.sw_usb_phy_sel = 0; // USB_SERIAL_JTAG -> FSLS PHY0 (Tab5 USB-C)
+    usb_serial_jtag_ll_phy_enable_pad(true);
+    vTaskDelay(pdMS_TO_TICKS(50));
+#endif
+#if ARDUINO_USB_CDC_ON_BOOT
+    Serial.begin(115200);
+    Serial.setTxTimeoutMs(0); // avoid blocking writes when host isn't reading the CDC port
+#endif
+}
+
+bool beginUsbRaw() {
+    if (s_usbStarted) return true;
+
+#if CONFIG_IDF_TARGET_ESP32P4 && !defined(USB_MSC_HIGH_SPEED)
+    PERIPH_RCC_ATOMIC() {
+        _usb_serial_jtag_ll_enable_bus_clock(false);
+        _usb_wrap_ll_enable_bus_clock(true);
+    }
+#endif
+    resetUsbDevicePeripheral();
+    vTaskDelay(pdMS_TO_TICKS(20));
+
+    static const usb_phy_otg_io_conf_t otgIoConf = USB_PHY_SELF_POWERED_DEVICE(-1);
+    usb_phy_config_t phyConfig = {
+        .controller = USB_PHY_CTRL_OTG,
+#if defined(USB_MSC_HIGH_SPEED)
+        .target = USB_PHY_TARGET_UTMI, // dedicated high-speed PHY, fixed pads
+        .otg_mode = USB_OTG_MODE_DEVICE,
+        .otg_speed = USB_PHY_SPEED_HIGH,
+#else
+        .target = USB_PHY_TARGET_INT,
+        .otg_mode = USB_OTG_MODE_DEVICE,
+        .otg_speed = USB_PHY_SPEED_FULL,
+#endif
+        .ext_io_conf = nullptr,
+        .otg_io_conf = &otgIoConf,
+    };
+    if (usb_new_phy(&phyConfig, &s_usbPhy) != ESP_OK) return false;
+
+    tusb_rhport_init_t tinit = {};
+    tinit.role = TUSB_ROLE_DEVICE;
+    tinit.speed = (kUsbEpSize == 512) ? TUSB_SPEED_HIGH : TUSB_SPEED_FULL;
+    if (!tusb_init(kUsbRhPort, &tinit)) return false;
+    tud_connect();
+
+    xTaskCreate(usbDeviceTask, "usb_msc", 4096, nullptr, configMAX_PRIORITIES - 1, &s_usbDeviceTask);
+    s_usbStarted = true;
+    return true;
+}
+
+void endUsbRaw() {
+    s_usbMounted = false;
+    if (s_usbStarted) {
+        tud_disconnect();
+        vTaskDelay(pdMS_TO_TICKS(30));
+        tusb_deinit(0);
+    }
+    if (s_usbDeviceTask) {
+        vTaskDelete(s_usbDeviceTask);
+        s_usbDeviceTask = nullptr;
+    }
+    if (s_usbPhy) {
+        usb_del_phy(s_usbPhy);
+        s_usbPhy = nullptr;
+    }
+    resetUsbDevicePeripheral();
+    s_usbStarted = false;
+    restoreUsbSerial();
+}
+} // namespace
+
+extern "C" uint8_t const *tud_descriptor_device_cb(void) {
+    return reinterpret_cast<uint8_t const *>(&kDeviceDescriptor);
+}
+
+extern "C" uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
+    (void)index;
+    return kConfigDescriptor;
+}
+
+extern "C" uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
+    (void)langid;
+    static uint16_t desc[32];
+    uint8_t chrCount = 0;
+
+    if (index == 0) {
+        desc[1] = 0x0409;
+        chrCount = 1;
+    } else {
+        if (index >= (sizeof(kUsbStrings) / sizeof(kUsbStrings[0]))) return nullptr;
+        const char *str = kUsbStrings[index];
+        chrCount = static_cast<uint8_t>(std::min<size_t>(std::strlen(str), 31));
+        for (uint8_t i = 0; i < chrCount; ++i) desc[1 + i] = str[i];
+    }
+
+    desc[0] = static_cast<uint16_t>((TUSB_DESC_STRING << 8) | (2 * chrCount + 2));
+    return desc;
+}
+
+extern "C" uint8_t tud_msc_get_maxlun_cb(void) { return 0; }
+
+extern "C" void
+tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4]) {
+    (void)lun;
+    std::memset(vendor_id, ' ', 8);
+    std::memset(product_id, ' ', 16);
+    std::memset(product_rev, ' ', 4);
+    std::memcpy(vendor_id, "M5Stack", 7);
+    std::memcpy(product_id, "Launcher SD", 11);
+    std::memcpy(product_rev, "1.0", 3);
+}
+
+extern "C" bool tud_msc_test_unit_ready_cb(uint8_t lun) {
+    (void)lun;
+    return true;
+}
+
+extern "C" void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size) {
+    (void)lun;
+    *block_count = SDM.numSectors();
+    *block_size = static_cast<uint16_t>(SDM.sectorSize());
+}
+
+extern "C" bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
+    (void)lun;
+    return usbStartStopCallback(power_condition, start, load_eject);
+}
+
+extern "C" int32_t
+tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
+    (void)lun;
+    return usbReadCallback(lba, offset, buffer, bufsize);
+}
+
+extern "C" int32_t
+tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
+    (void)lun;
+    return usbWriteCallback(lba, offset, buffer, bufsize);
+}
+
+extern "C" bool tud_msc_is_writable_cb(uint8_t lun) {
+    (void)lun;
+    return true;
+}
+
+extern "C" int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize) {
+    (void)lun;
+    (void)buffer;
+    (void)bufsize;
+    switch (scsi_cmd[0]) {
+        case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL: return 0;
+        case 0x35: return 0; // SYNCHRONIZE CACHE (10)
+        default:
+            MSC_LOG("scsi_cb: unsupported opcode 0x%02X", scsi_cmd[0]);
+            tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
+            return -1;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Faster SD clock while exporting the card
+//
+// READ10/WRITE10 are served one sector at a time, so MSC throughput is bound by the
+// SPI clock the card was mounted with (4 MHz by default). macOS' FSKit FAT driver reads
+// the whole FAT while mounting and fails with EIO if that takes too long, which a 4 MHz
+// clock can do on a large card (~277 KB/s measured on a Cardputer ADV).
+//
+// Boards opt in by defining MSC_SD_FREQ_HZ (e.g. -DMSC_SD_FREQ_HZ=20000000) once the
+// wiring is known to cope with it. The raised clock is verified against reference
+// sectors read at the default clock, steps down to half, then to the default, and is
+// restored when USB mode ends. Boards where the display shares the SD bus, and
+// SD_MMC boards, are left alone.
+// ---------------------------------------------------------------------------
+#define MSC_SD_FREQ_HZ 40000000 // Make it universal to all capable boards, solves windows issues too
+#if defined(MSC_SD_FREQ_HZ) && defined(SDM_SD) && !(TFT_MOSI == SDCARD_MOSI)
+#define MSC_SD_RAISE_CLOCK 1
+#include <esp_rom_crc.h>
+
+namespace {
+constexpr uint32_t kSdDefaultHz = 4000000; // Arduino SD.begin() default
+constexpr size_t kProbeSectors = 16;
+
+// A few consecutive sectors from the start of the card (MBR, boot sector, FAT) plus
+// some spread across it.
+void probeSectors(uint32_t total, uint32_t out[kProbeSectors]) {
+    size_t n = 0;
+    for (uint32_t i = 0; i < 8 && n < kProbeSectors; ++i) out[n++] = i < total ? i : total - 1;
+    for (uint32_t i = 1; i <= 8 && n < kProbeSectors; ++i) out[n++] = (uint32_t)(((uint64_t)total * i) / 9);
+}
+
+bool probeCrcs(const uint32_t sectors[kProbeSectors], uint32_t crcs[kProbeSectors]) {
+    uint8_t buf[512];
+    for (size_t i = 0; i < kProbeSectors; ++i) {
+        if (!SDM.readRAW(buf, sectors[i])) return false;
+        crcs[i] = esp_rom_crc32_le(0, buf, sizeof(buf));
+    }
+    return true;
+}
+
+bool mountSdAt(uint32_t hz) {
+    SDM.end();
+    return SDM.begin(_cs, sdcardSPI, hz);
+}
+
+void raiseSdClockForMsc() {
+    if (SDM.sectorSize() != 512) return;
+    const uint32_t total = SDM.numSectors();
+    if (total < kProbeSectors) return;
+
+    uint32_t sectors[kProbeSectors], reference[kProbeSectors], check[kProbeSectors];
+    probeSectors(total, sectors);
+    if (!probeCrcs(sectors, reference)) return;
+
+    const uint32_t candidates[] = {MSC_SD_FREQ_HZ, MSC_SD_FREQ_HZ / 2};
+    for (uint32_t hz : candidates) {
+        if (hz <= kSdDefaultHz) continue;
+        if (mountSdAt(hz) && SDM.numSectors() == total && probeCrcs(sectors, check) &&
+            memcmp(reference, check, sizeof(reference)) == 0) {
+            return;
+        }
+    }
+
+    // Nothing faster was reliable: go back to the clock the card was mounted with.
+    if (!mountSdAt(kSdDefaultHz)) sdcardMounted = false;
+}
+
+void restoreSdClock() {
+    if (!sdcardMounted) return;
+    if (!mountSdAt(kSdDefaultHz)) sdcardMounted = false;
+}
+} // namespace
+#endif
+
+MassStorage::MassStorage() { setup(); }
+
+MassStorage::~MassStorage() {
+    endUsbRaw();
+#if defined(MSC_SD_RAISE_CLOCK)
+    restoreSdClock();
+#endif
+#if MSC_DEBUG_LOG
+    if (sdcardMounted) flushMscLog();
+#endif
+}
+
+void MassStorage::setup() {
+    displayMessage("Mounting...");
+
+    setShouldStop(false);
+
+    if (!setupSdCard()) {
+        displayError("SD card not found.");
+        return;
+    }
+
+#if defined(MSC_SD_RAISE_CLOCK)
+    raiseSdClockForMsc();
+#endif
+    beginUsb();
+
+    vTaskDelay(pdTICKS_TO_MS(100));
+    return loop();
+}
+
+void MassStorage::loop() {
+    while (!check(EscPress) && !shouldStop) yield();
+}
+
+void MassStorage::beginUsb() {
+    drawUSBStickIcon(false);
+    Serial.flush();
+#if ARDUINO_USB_CDC_ON_BOOT
+    // Serial is the USB CDC that is about to lose its PHY, so it has to be shut down first.
+    // Where Serial is a plain UART (a board with a separate USB-UART bridge) closing it would
+    // only kill the console for no reason - USB never touches those pins.
+    Serial.end();
+#endif
+#if CONFIG_IDF_TARGET_ESP32P4 && !defined(USB_MSC_HIGH_SPEED)
+    // Full-speed path only: hand FSLS PHY0 over from USB_SERIAL_JTAG to USB_WRAP. The
+    // high-speed controller has its own UTMI PHY and shares nothing, so there is nothing
+    // to steal and nothing to restore.
+    usb_serial_jtag_ll_phy_enable_pad(false);
+    LP_SYS.usb_ctrl.sw_hw_usb_phy_sel = 1;
+    LP_SYS.usb_ctrl.sw_usb_phy_sel = 1; // USB_WRAP -> FSLS PHY0 (GPIO24/25 on Tab5 USB-C)
+    usb_wrap_ll_phy_set_defaults(&USB_WRAP);
+    usb_wrap_ll_phy_enable_pad(&USB_WRAP, true);
+    usb_wrap_ll_phy_set_pullup_strength(&USB_WRAP, true);
+#endif
+    s_usbMounted = false;
+    beginUsbRaw();
+}
+
+void MassStorage::displayMessage(String message) {
+    tft->drawRoundRect(5, 5, tftWidth - 10, tftHeight - 10, 5, ALCOLOR);
+    tft->fillRoundRect(6, 6, tftWidth - 12, tftHeight - 12, 5, BGCOLOR);
+    setTftDisplay(7, 7, ALCOLOR, _fp, BGCOLOR);
+    tft->drawCentreString("-= USB MSC =-", tftWidth / 2, 0, 8);
+    tft->setCursor(10, 20);
+    tftprint(message, 10, 5);
+}
+
+int32_t usbWriteCallback(uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
+    const uint32_t secSize = SDM.sectorSize();
+    if (secSize == 0 || secSize > 512) {
+        MSC_LOG(
+            "WR lba=%lu off=%lu size=%lu: bad sector size %lu",
+            (unsigned long)lba,
+            (unsigned long)offset,
+            (unsigned long)bufsize,
+            (unsigned long)secSize
+        );
+        tud_msc_set_sense(0, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
+        return -1;
+    }
+
+    uint8_t sector[512];
+    uint32_t sectorLba = lba + (offset / secSize);
+    uint32_t sectorOffset = offset % secSize;
+    uint32_t remaining = bufsize;
+    uint8_t *src = buffer;
+
+    while (remaining > 0) {
+        const uint32_t chunk = std::min<uint32_t>(remaining, secSize - sectorOffset);
+
+        if (sectorOffset == 0 && chunk == secSize) {
+            if (!SDM.writeRAW(src, sectorLba)) {
+                MSC_LOG(
+                    "WR lba=%lu off=%lu size=%lu: writeRAW failed at sector %lu",
+                    (unsigned long)lba,
+                    (unsigned long)offset,
+                    (unsigned long)bufsize,
+                    (unsigned long)sectorLba
+                );
+                tud_msc_set_sense(0, SCSI_SENSE_MEDIUM_ERROR, 0x03, 0x00);
+                return -1;
+            }
+        } else {
+            if (!SDM.readRAW(sector, sectorLba)) {
+                MSC_LOG(
+                    "WR lba=%lu off=%lu size=%lu: readRAW (rmw) failed at sector %lu",
+                    (unsigned long)lba,
+                    (unsigned long)offset,
+                    (unsigned long)bufsize,
+                    (unsigned long)sectorLba
+                );
+                tud_msc_set_sense(0, SCSI_SENSE_MEDIUM_ERROR, 0x11, 0x00);
+                return -1;
+            }
+            std::memcpy(sector + sectorOffset, src, chunk);
+            if (!SDM.writeRAW(sector, sectorLba)) {
+                MSC_LOG(
+                    "WR lba=%lu off=%lu size=%lu: writeRAW (rmw) failed at sector %lu",
+                    (unsigned long)lba,
+                    (unsigned long)offset,
+                    (unsigned long)bufsize,
+                    (unsigned long)sectorLba
+                );
+                tud_msc_set_sense(0, SCSI_SENSE_MEDIUM_ERROR, 0x03, 0x00);
+                return -1;
+            }
+        }
+
+        remaining -= chunk;
+        src += chunk;
+        sectorLba++;
+        sectorOffset = 0;
+    }
+
+    return bufsize;
+}
+
+#if defined(SDM_SD)
+namespace {
+// SDFS keeps its FatFs drive number protected. Reaching it lets a run of sectors be
+// read with one multi-block command (CMD18) instead of a command per sector.
+struct SdDrive : fs::SDFS {
+    static uint8_t pdrv() { return SDM.*(&SdDrive::_pdrv); }
+};
+} // namespace
+#endif
+
+static bool readSectors(uint8_t *dst, uint32_t sector, uint32_t count, uint32_t secSize) {
+#if defined(SDM_SD)
+    (void)secSize;
+    return disk_read(SdDrive::pdrv(), dst, sector, count) == RES_OK;
+#else
+    for (uint32_t i = 0; i < count; ++i) {
+        if (!SDM.readRAW(dst + i * secSize, sector + i)) return false;
+    }
+    return true;
+#endif
+}
+
+int32_t usbReadCallback(uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
+    const uint32_t secSize = SDM.sectorSize();
+    if (secSize == 0 || secSize > 512) {
+        MSC_LOG(
+            "RD lba=%lu off=%lu size=%lu: bad sector size %lu",
+            (unsigned long)lba,
+            (unsigned long)offset,
+            (unsigned long)bufsize,
+            (unsigned long)secSize
+        );
+        tud_msc_set_sense(0, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
+        return -1;
+    }
+
+    uint8_t sector[512];
+    uint32_t sectorLba = lba + (offset / secSize);
+    uint32_t sectorOffset = offset % secSize;
+    uint32_t remaining = bufsize;
+    uint8_t *dst = reinterpret_cast<uint8_t *>(buffer);
+
+    while (remaining > 0) {
+        uint32_t chunk = std::min<uint32_t>(remaining, secSize - sectorOffset);
+        uint32_t count = 1;
+
+        if (sectorOffset == 0 && chunk == secSize) {
+            // Every whole sector left goes straight into the USB buffer in one read
+            count = remaining / secSize;
+            chunk = count * secSize;
+            if (!readSectors(dst, sectorLba, count, secSize)) {
+                MSC_LOG(
+                    "RD lba=%lu off=%lu size=%lu: read of %lu sectors failed at sector %lu",
+                    (unsigned long)lba,
+                    (unsigned long)offset,
+                    (unsigned long)bufsize,
+                    (unsigned long)count,
+                    (unsigned long)sectorLba
+                );
+                tud_msc_set_sense(0, SCSI_SENSE_MEDIUM_ERROR, 0x11, 0x00);
+                return -1;
+            }
+        } else {
+            if (!SDM.readRAW(sector, sectorLba)) {
+                MSC_LOG(
+                    "RD lba=%lu off=%lu size=%lu: readRAW (partial) failed at sector %lu",
+                    (unsigned long)lba,
+                    (unsigned long)offset,
+                    (unsigned long)bufsize,
+                    (unsigned long)sectorLba
+                );
+                tud_msc_set_sense(0, SCSI_SENSE_MEDIUM_ERROR, 0x11, 0x00);
+                return -1;
+            }
+            std::memcpy(dst, sector + sectorOffset, chunk);
+        }
+
+        remaining -= chunk;
+        dst += chunk;
+        sectorLba += count;
+        sectorOffset = 0;
+    }
+
+    return bufsize;
+}
+
+bool usbStartStopCallback(uint8_t power_condition, bool start, bool load_eject) {
+    (void)power_condition;
+    if (!start && load_eject) {
+        MSC_LOG("start_stop: eject requested");
+        MassStorage::setShouldStop(true);
+        return true;
+    }
+
+    return true;
+}
+
+void drawUSBStickIcon(bool plugged) {
+    MassStorage::displayMessage("");
+
+    float scale;
+    if (rotation & 0b01) scale = float((float)tftHeight / (float)135);
+    else scale = float((float)tftWidth / (float)240);
+
+    int iconW = scale * 120;
+    int iconH = scale * 40;
+
+    if (iconW % 2 != 0) iconW++;
+    if (iconH % 2 != 0) iconH++;
+
+    int radius = 5;
+
+    int bodyW = 2 * iconW / 3;
+    int bodyH = iconH;
+    int bodyX = tftWidth / 2 - iconW / 2;
+    int bodyY = tftHeight / 2;
+
+    int portW = iconW - bodyW;
+    int portH = 0.8 * bodyH;
+    int portX = bodyX + bodyW;
+    int portY = bodyY + (bodyH - portH) / 2;
+
+    int portDetailW = portW / 2;
+    int portDetailH = portH / 4;
+    int portDetailX = portX + (portW - portDetailW) / 2;
+    int portDetailY1 = portY + 0.8 * portDetailH;
+    int portDetailY2 = portY + portH - 1.8 * portDetailH;
+
+    int ledW = 0.1 * bodyH;
+    int ledH = 0.6 * bodyH;
+    int ledX = bodyX + 2 * ledW;
+    int ledY = bodyY + (iconH - ledH) / 2;
+
+    // Body
+    tft->fillRoundRect(bodyX, bodyY, bodyW, bodyH, radius, DARKCYAN);
+    // Port USB
+    tft->fillRoundRect(portX, portY, portW, portH, radius, LIGHTGREY);
+    // Small square on port
+    tft->fillRoundRect(portDetailX, portDetailY1, portDetailW, portDetailH, radius, DARKGREY);
+    tft->fillRoundRect(portDetailX, portDetailY2, portDetailW, portDetailH, radius, DARKGREY);
+    // Led
+    tft->fillRoundRect(ledX, ledY, ledW, ledH, radius, plugged ? GREEN : RED);
+
+    tft->display(false);
+}
+
+#endif // SOC_USB_OTG_SUPPORTED && !DISABLE_MASS_STORAGE

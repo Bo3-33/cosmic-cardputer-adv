@@ -1,0 +1,10 @@
+{
+  "name": "CosmicLua",
+  "version": "5.4.8",
+  "license": "MIT",
+  "description": "Official Lua 5.4.8 source for COSMIC hosted apps",
+  "build": {
+    "srcFilter": ["+<*.c>", "-<lua.c>", "-<luac.c>"],
+    "flags": ["-DLUA_32BITS"]
+  }
+}

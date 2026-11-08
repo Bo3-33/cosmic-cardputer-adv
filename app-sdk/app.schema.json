@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "COSMIC App Package manifest v1",
+  "type": "object",
+  "required": ["format", "version", "api", "id", "name", "entry"],
+  "properties": {
+    "format": {"const": "cosmic.app"},
+    "version": {"const": 1},
+    "api": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 24},
+    "entry": {"const": "main.lua"},
+    "author": {"type": "string"},
+    "description": {"type": "string"}
+  }
+}
